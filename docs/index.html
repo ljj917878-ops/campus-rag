@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<script>(function(){try{var q=new URLSearchParams(location.search).get("theme");var t=(location.hash==="#light"||location.hash==="#shot-light"||q==="light")?"light":(location.hash==="#dark"||q==="dark")?"dark":localStorage.getItem("campusrag-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);document.documentElement.style.colorScheme=t;}}catch(e){}})();</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CampusRAG · 一张图看全</title>
 <link rel="stylesheet" href="assets/site.css?v=20261114f">
+<link rel="stylesheet" href="assets/fx.css?v=19">
+<link rel="stylesheet" href="assets/vendor/lenis/lenis.css?v=19">
 <style>
   /* ── 顶部数字条 ───────────────────────── */
   .flowbar{display:flex;align-items:stretch;gap:0;background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);margin:18px 0 6px}
@@ -521,6 +524,17 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
     <a href="index.html" class="on">一张图看全</a>
     <a href="code.html">代码详解</a>
   </nav>
+  <button class="theme-toggle" type="button" role="switch" aria-checked="false" aria-label="切换到浅色模式" title="切换到浅色模式">
+    <span class="tt-bloom" aria-hidden="true"></span>
+    <span class="tt-track" aria-hidden="true">
+      <span class="tt-ambient"></span>
+      <span class="tt-glow"></span>
+      <span class="tt-thumb">
+        <svg class="tt-moon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20.4 14.2A8.4 8.4 0 0 1 9.8 3.6a8.5 8.5 0 1 0 10.6 10.6Z"/></svg>
+        <svg class="tt-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/><path d="M12 3v2.2M12 18.8V21M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M3 12h2.2M18.8 12H21M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"/></svg>
+      </span>
+    </span>
+  </button>
 </div></div>
 
 <div class="wrap">
@@ -580,6 +594,21 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
           <li><div class="nd"><b>06 组装</b>：挑最像的 4 句原话，抄不改写 <code data-fn="_compose_answer">:543</code></div></li>
           <li><div class="nd"><b>07 作答</b>：答案 + （依据：卡片编号），引用去重 <code>app.py main()</code></div></li>
         </ul>
+          <div class="mmd-box" data-mmd="steps">
+            <pre class="mermaid-src" hidden>flowchart TD
+  subgraph boot [启动时跑一次]
+    A[01 读入] --> B[02 切分]
+    B --> C[03 索引]
+  end
+  subgraph ask [每次提问]
+    D[04 检索] --> E[05 判定]
+    E -->|低于 0.02| F[依据不足，不调模型]
+    E -->|过线| G[06 组装]
+    G --> H[07 作答]
+  end
+  C -.-> D</pre>
+            <div class="mmd-mount" role="img" aria-label="七步流程图：启动时读入、切分、索引，每次提问检索、判定、组装、作答"></div>
+          </div>
       </li>
 
       <!-- ③ 四个数字 -->
@@ -697,6 +726,13 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
           <li><div class="nd"><b>evaluation.py</b> <span data-lines="evaluation.py">367</span> 行 · 15 道题打分，够不够线决定「能不能合进去」</div></li>
           <li><div class="nd">调用关系：<span class="mono">app.py → rag_engine.py →（可选）generator.py</span>；evaluation.py 独立跑，把 rag_engine 当被测对象</div></li>
         </ul>
+          <div class="mmd-box mmd-wide" data-mmd="files">
+            <pre class="mermaid-src" hidden>flowchart LR
+  app[app.py 界面] --> eng[rag_engine.py 核心]
+  eng -.->|可选 Key| gen[generator.py 改写]
+  ev[evaluation.py 评测] --> eng</pre>
+            <div class="mmd-mount" role="img" aria-label="四个文件调用关系：app.py 调用 rag_engine.py，可选调用 generator.py，evaluation.py 调用引擎"></div>
+          </div>
       </li>
 
       <!-- ⑨ 面试问答 -->
@@ -810,8 +846,25 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
     showOnly(0);
     setActive(e.currentTarget);
   });
-  // 默认进「入门」：只展开前两支，先看懂怎么跑，再往下钻
-  showOnly(2);
+  // 默认进「入门」：只展开前两支。?open=02,08 则按参数展开对应主干。
+  (function openFromQuery(){
+    var q = '';
+    try { q = new URLSearchParams(location.search).get('open') || ''; } catch (e) { q = ''; }
+    if (!q) { showOnly(2); return; }
+    var want = {};
+    q.split(/[,;\s]+/).forEach(function(s){
+      s = (s || '').trim();
+      if (!s) return;
+      if (/^\d+$/.test(s)) s = ('0' + s).slice(-2);
+      want[s] = true;
+    });
+    topLevel().forEach(function(li){
+      var noEl = li.querySelector(':scope > .nd.lv1 .no');
+      var no = noEl ? noEl.textContent.trim() : '';
+      if (want[no]) { if (li.classList.contains('collapsed')) openLi(li); }
+      else if (!li.classList.contains('collapsed')) closeLi(li);
+    });
+  })();
 })();
 </script>
 
@@ -873,6 +926,11 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
   });
 })();
 </script>
+
+<script src="assets/vendor/lenis/lenis.min.js?v=19"></script>
+<script src="assets/fx.js?v=19"></script>
+<script src="assets/liquid-glass.js?v=19"></script>
+<script src="assets/mermaid-lazy.js?v=19"></script>
 </body>
 </html>
 

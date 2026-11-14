@@ -1,8 +1,16 @@
-﻿<!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="utf-8">
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<script>(function(){try{var q=new URLSearchParams(location.search).get("theme");var t=(location.hash==="#light"||location.hash==="#shot-light"||q==="light")?"light":(location.hash==="#dark"||q==="dark")?"dark":localStorage.getItem("campusrag-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);document.documentElement.style.colorScheme=t;}}catch(e){}})();</script>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CampusRAG · 小白版</title>
 <link rel="stylesheet" href="assets/site.css?v=20261114f">
+<link rel="stylesheet" href="assets/fx.css?v=19">
+<link rel="stylesheet" href="assets/vendor/lenis/lenis.css?v=19">
+<link rel="stylesheet" href="assets/vendor/tocbot/tocbot.css?v=19">
+<link rel="stylesheet" href="assets/vendor/prism/themes/prism-tomorrow.min.css?v=19" id="prism-theme-dark">
+<link rel="stylesheet" href="assets/vendor/prism/themes/prism.min.css?v=19" id="prism-theme-light" disabled>
+<script>(function(){try{var t=document.documentElement.getAttribute("data-theme")==="light"?"light":"dark";var d=document.getElementById("prism-theme-dark");var l=document.getElementById("prism-theme-light");if(d&&l){d.disabled=t==="light";l.disabled=t!=="light";}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0e1217;color:#e8eef6;font:16px/1.75 "Microsoft YaHei","PingFang SC",system-ui,sans-serif}
@@ -404,6 +412,17 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
     <a href="index.html">一张图看全</a>
     <a href="code.html" class="on">代码详解</a>
   </nav>
+  <button class="theme-toggle" type="button" role="switch" aria-checked="false" aria-label="切换到浅色模式" title="切换到浅色模式">
+    <span class="tt-bloom" aria-hidden="true"></span>
+    <span class="tt-track" aria-hidden="true">
+      <span class="tt-ambient"></span>
+      <span class="tt-glow"></span>
+      <span class="tt-thumb">
+        <svg class="tt-moon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20.4 14.2A8.4 8.4 0 0 1 9.8 3.6a8.5 8.5 0 1 0 10.6 10.6Z"/></svg>
+        <svg class="tt-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/><path d="M12 3v2.2M12 18.8V21M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M3 12h2.2M18.8 12H21M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"/></svg>
+      </span>
+    </span>
+  </button>
   </div>
 </div>
 <div class="wrap" style="padding-top:30px">
@@ -421,27 +440,28 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
 <div class="panel on" id="code">
   <h2>怎么读这一页</h2>
   <p class="lead">左边是原封不动的代码（左上角标了行号范围），右边是这句在干嘛。看不懂英文没关系，一段一段对着右边看就行。代码是按「一个动作」分组的，不是按行——分组读才读得下去。</p>
+  <nav id="fn-toc" class="fn-toc-hidden" hidden aria-hidden="true"></nav>
   <div class="fnbar"><a href="#fn0">split_into_chunks()</a><a href="#fn1b">_units_of() / _pack_sentences()</a><a href="#fn1">_fit()</a><a href="#fn2">retrieve()</a><a href="#fn3">ask() 的判断部分</a><a href="#fn4">_compose_answer()</a><a href="#fn5">界面怎么接引擎</a></div>
-  <section class="fn" id="fn0"><h3>split_into_chunks() <span class="loc">rag_engine.py:195</span></h3><p class="what">把一整本手册切成一张张「小卡片」。为什么切？因为后面要找「最相关的那几段」，总不能每次把整本书塞进去。</p><div class="blk"><div class="cside"><div class="ln">195–196</div><pre>def split_into_chunks(text: str, source: str, chunk_size: int = 280, overlap: int = 60) -&gt; list[Chunk]:
-    """按段落优先切分；长段落按句子边界打包，不切断句子。"""</pre></div><div class="nside">函数定义。chunk_size=280 意思是「一张卡片最多 280 个字」，overlap=60 是「相邻卡片重叠 60 字」。</div></div><div class="blk"><div class="cside"><div class="ln">197–200</div><pre>    if chunk_size &lt;= 0:
+  <section class="fn"><h3 id="fn0">split_into_chunks() <span class="loc">rag_engine.py:195</span></h3><p class="what">把一整本手册切成一张张「小卡片」。为什么切？因为后面要找「最相关的那几段」，总不能每次把整本书塞进去。</p><div class="blk"><div class="cside"><div class="ln">195–196</div><pre class="language-python"><code class="language-python">def split_into_chunks(text: str, source: str, chunk_size: int = 280, overlap: int = 60) -&gt; list[Chunk]:
+    """按段落优先切分；长段落按句子边界打包，不切断句子。"""</code></pre></div><div class="nside">函数定义。chunk_size=280 意思是「一张卡片最多 280 个字」，overlap=60 是「相邻卡片重叠 60 字」。</div></div><div class="blk"><div class="cside"><div class="ln">197–200</div><pre class="language-python"><code class="language-python">    if chunk_size &lt;= 0:
         raise ValueError("chunk_size 必须为正整数")
     if overlap &gt;= chunk_size:
-        overlap = max(0, chunk_size // 5)</pre></div><div class="nside">防呆：卡片大小不能是 0 或负数；如果重叠比卡片还大，就把重叠砍到卡片的五分之一。</div></div><div class="blk"><div class="cside"><div class="ln">202–204</div><pre>    text = _normalize_whitespace(text)
+        overlap = max(0, chunk_size // 5)</code></pre></div><div class="nside">防呆：卡片大小不能是 0 或负数；如果重叠比卡片还大，就把重叠砍到卡片的五分之一。</div></div><div class="blk"><div class="cside"><div class="ln">202–204</div><pre class="language-python"><code class="language-python">    text = _normalize_whitespace(text)
     if not text:
-        return []</pre></div><div class="nside">先把原文里多余的空白整理掉；如果整理完是空的，直接返回「切不出东西」。</div></div><div class="blk"><div class="cside"><div class="ln">206</div><pre>    paragraphs = [p.strip() for p in re.split(r"\n{2,}", text) if p.strip()]</pre></div><div class="nside">按「空行」切段。手册里章与章之间是空行，一共切出 12 段，每段基本就是一整章；章内的「第X条」之间只有单换行，不会在这里被切开。</div></div><div class="blk"><div class="cside"><div class="ln">207–214</div><pre>    raw_units: list[tuple[str, int]] = []
+        return []</code></pre></div><div class="nside">先把原文里多余的空白整理掉；如果整理完是空的，直接返回「切不出东西」。</div></div><div class="blk"><div class="cside"><div class="ln">206</div><pre class="language-python"><code class="language-python">    paragraphs = [p.strip() for p in re.split(r"\n{2,}", text) if p.strip()]</code></pre></div><div class="nside">按「空行」切段。手册里章与章之间是空行，一共切出 12 段，每段基本就是一整章；章内的「第X条」之间只有单换行，不会在这里被切开。</div></div><div class="blk"><div class="cside"><div class="ln">207–214</div><pre class="language-python"><code class="language-python">    raw_units: list[tuple[str, int]] = []
     cursor = 0
     for para in paragraphs:
         idx = text.find(para, cursor)
         if idx &lt; 0:
             idx = cursor
         raw_units.append((para, idx))
-        cursor = idx + len(para)</pre></div><div class="nside">记下每个段落在原文里的位置（从第几个字开始）。这个位置以后用来做「原文定位」，让用户能跳回去核对。</div></div><div class="blk"><div class="cside"><div class="ln">217–218</div><pre>    current_section = Path(source).name
-    seq = 1</pre></div><div class="nside">current_section 记「当前属于第几章」，seq 是卡片编号，从 001 开始。</div></div><div class="blk"><div class="cside"><div class="ln">219–220</div><pre>    for para, start in raw_units:
-        section_hit = _guess_section(para, current_section)</pre></div><div class="nside">逐段处理：先取这段的第一行（最多 40 字）当「候选章节名」。注意 _guess_section 其实只是返回第一个非空行，并不是真的在认章节——这个偷懒后面会露馅。</div></div><div class="blk"><div class="cside"><div class="ln">221–222</div><pre>        if re.match(r"^(第[一二三四五六七八九十百零\d]+[章节].*)", section_hit) or section_hit.startswith("附则"):
-            current_section = section_hit</pre></div><div class="nside">再判断这个候选行是不是「第X章 / 第X节」或者「附则」；是，才把「当前章节」换成它。</div></div><div class="blk"><div class="cside"><div class="ln">223–226</div><pre>        if len(para) &lt;= chunk_size:
+        cursor = idx + len(para)</code></pre></div><div class="nside">记下每个段落在原文里的位置（从第几个字开始）。这个位置以后用来做「原文定位」，让用户能跳回去核对。</div></div><div class="blk"><div class="cside"><div class="ln">217–218</div><pre class="language-python"><code class="language-python">    current_section = Path(source).name
+    seq = 1</code></pre></div><div class="nside">current_section 记「当前属于第几章」，seq 是卡片编号，从 001 开始。</div></div><div class="blk"><div class="cside"><div class="ln">219–220</div><pre class="language-python"><code class="language-python">    for para, start in raw_units:
+        section_hit = _guess_section(para, current_section)</code></pre></div><div class="nside">逐段处理：先取这段的第一行（最多 40 字）当「候选章节名」。注意 _guess_section 其实只是返回第一个非空行，并不是真的在认章节——这个偷懒后面会露馅。</div></div><div class="blk"><div class="cside"><div class="ln">221–222</div><pre class="language-python"><code class="language-python">        if re.match(r"^(第[一二三四五六七八九十百零\d]+[章节].*)", section_hit) or section_hit.startswith("附则"):
+            current_section = section_hit</code></pre></div><div class="nside">再判断这个候选行是不是「第X章 / 第X节」或者「附则」；是，才把「当前章节」换成它。</div></div><div class="blk"><div class="cside"><div class="ln">223–226</div><pre class="language-python"><code class="language-python">        if len(para) &lt;= chunk_size:
             pieces = [(para, 0)]
         else:
-            pieces = _pack_sentences(para, chunk_size, overlap)</pre></div><div class="nside">段落不长就整段当一张卡片；超过 280 字才交给 <b>_pack_sentences</b> 去拆。注意这里不再「按字数硬切」，切点由下一条的帮手决定。</div></div><div class="blk"><div class="cside"><div class="ln">227–238</div><pre>        for piece, off in pieces:
+            pieces = _pack_sentences(para, chunk_size, overlap)</code></pre></div><div class="nside">段落不长就整段当一张卡片；超过 280 字才交给 <b>_pack_sentences</b> 去拆。注意这里不再「按字数硬切」，切点由下一条的帮手决定。</div></div><div class="blk"><div class="cside"><div class="ln">227–238</div><pre class="language-python"><code class="language-python">        for piece, off in pieces:
             chunks.append(
                 Chunk(
                     chunk_id=f"{Path(source).stem}-{seq:03d}",
@@ -452,8 +472,8 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
                     end_char=start + off + len(piece),
                 )
             )
-            seq += 1</pre></div><div class="nside">把拆出来的每一片包装成卡片：编号、正文、来源文件、所属章节、在原文里的起止位置。章节名用 _guess_section(piece, …) 猜，猜不到就沿用上一张卡片的章节。</div></div><div class="blk"><div class="cside"><div class="ln">239–240</div><pre>    logger.info("文档切分完成 source=%s chunks=%d", source, len(chunks))
-    return chunks</pre></div><div class="nside">打一条日志（「切了 15 段」就是这里记的），然后把所有卡片返回。</div></div></section><section class="fn" id="fn1b"><h3>_units_of() / _pack_sentences() <span class="loc">rag_engine.py:124</span></h3><p class="what">这两个是 2026-11-14 加的帮手：先把段落拆成「不能切断的最小单位」，再把单位打包成卡片。切点因此只落在「条」与「条」之间、句号之后，不会再出现「…没收器具并视」这种半句开头。</p><div class="blk"><div class="cside"><div class="ln">124</div><pre>_ARTICLE_SPLIT = re.compile(r"(?=第[一二三四五六七八九十百零\d]+条)")</pre></div><div class="nside">「第 X 条」前面插一个切点。正则里的 <b>(?=…)</b> 是零宽断言：只标记位置、不吞掉文字，所以条文本身一个字都不会少。</div></div><div class="blk"><div class="cside"><div class="ln">127–147</div><pre>def _units_of(para: str, chunk_size: int) -&gt; list[str]:
+            seq += 1</code></pre></div><div class="nside">把拆出来的每一片包装成卡片：编号、正文、来源文件、所属章节、在原文里的起止位置。章节名用 _guess_section(piece, …) 猜，猜不到就沿用上一张卡片的章节。</div></div><div class="blk"><div class="cside"><div class="ln">239–240</div><pre class="language-python"><code class="language-python">    logger.info("文档切分完成 source=%s chunks=%d", source, len(chunks))
+    return chunks</code></pre></div><div class="nside">打一条日志（「切了 15 段」就是这里记的），然后把所有卡片返回。</div></div></section><section class="fn"><h3 id="fn1b">_units_of() / _pack_sentences() <span class="loc">rag_engine.py:124</span></h3><p class="what">这两个是 2026-11-14 加的帮手：先把段落拆成「不能切断的最小单位」，再把单位打包成卡片。切点因此只落在「条」与「条」之间、句号之后，不会再出现「…没收器具并视」这种半句开头。</p><div class="blk"><div class="cside"><div class="ln">124</div><pre class="language-python"><code class="language-python">_ARTICLE_SPLIT = re.compile(r"(?=第[一二三四五六七八九十百零\d]+条)")</code></pre></div><div class="nside">「第 X 条」前面插一个切点。正则里的 <b>(?=…)</b> 是零宽断言：只标记位置、不吞掉文字，所以条文本身一个字都不会少。</div></div><div class="blk"><div class="cside"><div class="ln">127–147</div><pre class="language-python"><code class="language-python">def _units_of(para: str, chunk_size: int) -&gt; list[str]:
     """把一段拆成「不被切断的最小单位」：优先条，条太长再按句子，句子还太长才按字符。
 
     这样保证切点只出现在条与条之间、句号之后，不会出现「…没收器具并视」这种半句。
@@ -473,7 +493,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
             else:  # 极端情况：单句超过块上限，只能硬切
                 for off in range(0, len(sent), chunk_size):
                     units.append(sent[off : off + chunk_size])
-    return units</pre></div><div class="nside">拆单位，三层兜底：先按「条」拆；条太长再按句子拆；句子还超过上限（极端情况）才按字符硬切。前两层能命中，就绝不切句。</div></div><div class="blk"><div class="cside"><div class="ln">156–179</div><pre>    units = _units_of(para, chunk_size)
+    return units</code></pre></div><div class="nside">拆单位，三层兜底：先按「条」拆；条太长再按句子拆；句子还超过上限（极端情况）才按字符硬切。前两层能命中，就绝不切句。</div></div><div class="blk"><div class="cside"><div class="ln">156–179</div><pre class="language-python"><code class="language-python">    units = _units_of(para, chunk_size)
     if not units:
         return []
 
@@ -496,7 +516,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
         buf.append(unit)
         size += len(unit)
     if buf:
-        pieces.append(buf)</pre></div><div class="nside">打包：单位依次往筐里放，放不下就封筐；封筐时把最后几个<b>整单位</b>留作重叠。重叠也是整条/整句，所以边界两侧不会各剩半句。</div></div><div class="blk"><div class="cside"><div class="ln">181–192</div><pre>    out: list[tuple[str, int]] = []
+        pieces.append(buf)</code></pre></div><div class="nside">打包：单位依次往筐里放，放不下就封筐；封筐时把最后几个<b>整单位</b>留作重叠。重叠也是整条/整句，所以边界两侧不会各剩半句。</div></div><div class="blk"><div class="cside"><div class="ln">181–192</div><pre class="language-python"><code class="language-python">    out: list[tuple[str, int]] = []
     cursor = 0
     for group in pieces:
         text = "".join(group).strip()
@@ -507,18 +527,18 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
             idx = cursor
         out.append((text, idx))
         cursor = idx + len(text)
-    return out</pre></div><div class="nside">每筐文本回到原段里找真实起点，写进 start_char。界面上「回到原文第几个字」靠它。</div></div></section><section class="fn" id="fn1"><h3>_fit() <span class="loc">rag_engine.py:332</span></h3><p class="what">把所有卡片做成一张「词-卡片分数表」，也就是索引。这一步相当于给每张卡片做一份「关键词档案」。</p><div class="blk"><div class="cside"><div class="ln">332</div><pre>        corpus = [c.text for c in self.chunks]</pre></div><div class="nside">把 15 张卡片的正文收集成一个列表，一行一张卡片。</div></div><div class="blk"><div class="cside"><div class="ln">333–338</div><pre>        self._vectorizer = TfidfVectorizer(
+    return out</code></pre></div><div class="nside">每筐文本回到原段里找真实起点，写进 start_char。界面上「回到原文第几个字」靠它。</div></div></section><section class="fn"><h3 id="fn1">_fit() <span class="loc">rag_engine.py:331</span></h3><p class="what">把所有卡片做成一张「词-卡片分数表」，也就是索引。这一步相当于给每张卡片做一份「关键词档案」。</p><div class="blk"><div class="cside"><div class="ln">332</div><pre class="language-python"><code class="language-python">        corpus = [c.text for c in self.chunks]</code></pre></div><div class="nside">把 15 张卡片的正文收集成一个列表，一行一张卡片。</div></div><div class="blk"><div class="cside"><div class="ln">333–338</div><pre class="language-python"><code class="language-python">        self._vectorizer = TfidfVectorizer(
             analyzer=_jieba_analyzer,
             min_df=1,
             sublinear_tf=True,
             norm="l2",
-        )</pre></div><div class="nside">创建 TF-IDF 计算器：analyzer 用 jieba 中文分词（因为中文词之间没空格），它还会额外加相邻两字的组合（2-gram），好处是专有词被切错也能补救，代价是词表变大、噪声变多；min_df=1 表示「只出现一次的词也保留」，norm='l2' 把每行长度归一化，避免长卡片天然分数高。</div></div><div class="blk"><div class="cside"><div class="ln">339</div><pre>        self._matrix = self._vectorizer.fit_transform(corpus)</pre></div><div class="nside">核心：算出 15 行 × 1857 列的大表。每一格 = 某个词在某张卡片里有多重要。算完存起来，以后提问时重复用。</div></div><div class="blk"><div class="cside"><div class="ln">340</div><pre>        logger.debug("向量索引已更新 documents=%d terms=%d", len(corpus), len(self._vectorizer.get_feature_names_out()))</pre></div><div class="nside">记日志：多少文档、多少个词。</div></div></section><section class="fn" id="fn2"><h3>retrieve() <span class="loc">rag_engine.py:343</span></h3><p class="what">拿你的问题，去 15 张卡片里找最像的几张。</p><div class="blk"><div class="cside"><div class="ln">343–344</div><pre>        if not self.is_ready() or self._vectorizer is None or self._matrix is None:
-            raise RuntimeError("尚未加载任何文档，无法检索")</pre></div><div class="nside">如果还没加载文档，直接报错——不能对着空气检索。</div></div><div class="blk"><div class="cside"><div class="ln">348–349</div><pre>        k = top_k or self.top_k
-        k = max(1, min(k, len(self.chunks)))</pre></div><div class="nside">k = 最多返回几张，默认 4；但不能超过卡片总数（只有 15 张时不会要 20 张）。</div></div><div class="blk"><div class="cside"><div class="ln">350</div><pre>        q_vec = self._vectorizer.transform([q])</pre></div><div class="nside">把你的问题也变成同样格式的「关键词档案」。注意是 transform 不是 fit：用已经建好的词表，不能重新学一套词，否则两边对不上。</div></div><div class="blk"><div class="cside"><div class="ln">351</div><pre>        scores = cosine_similarity(q_vec, self._matrix).ravel()</pre></div><div class="nside">余弦相似度：算问题和每一张卡片的「方向重合度」，结果是一个 0~1 之间的数，越大越像。</div></div><div class="blk"><div class="cside"><div class="ln">352–353</div><pre>        order = np.argsort(scores)[::-1][:k]
-        hits = [(self.chunks[i], float(scores[i])) for i in order if scores[i] &gt; 0]</pre></div><div class="nside">按分数从高到低排序，取前 k 个；`if scores[i] > 0` 表示 0 分的直接丢掉——所以有时只返回 3 条而不是 4 条。</div></div><div class="blk"><div class="cside"><div class="ln">354–356</div><pre>        if not hits:
+        )</code></pre></div><div class="nside">创建 TF-IDF 计算器：analyzer 用 jieba 中文分词（因为中文词之间没空格），它还会额外加相邻两字的组合（2-gram），好处是专有词被切错也能补救，代价是词表变大、噪声变多；min_df=1 表示「只出现一次的词也保留」，norm='l2' 把每行长度归一化，避免长卡片天然分数高。</div></div><div class="blk"><div class="cside"><div class="ln">339</div><pre class="language-python"><code class="language-python">        self._matrix = self._vectorizer.fit_transform(corpus)</code></pre></div><div class="nside">核心：算出 15 行 × 1857 列的大表。每一格 = 某个词在某张卡片里有多重要。算完存起来，以后提问时重复用。</div></div><div class="blk"><div class="cside"><div class="ln">340</div><pre class="language-python"><code class="language-python">        logger.debug("向量索引已更新 documents=%d terms=%d", len(corpus), len(self._vectorizer.get_feature_names_out()))</code></pre></div><div class="nside">记日志：多少文档、多少个词。</div></div></section><section class="fn"><h3 id="fn2">retrieve() <span class="loc">rag_engine.py:342</span></h3><p class="what">拿你的问题，去 15 张卡片里找最像的几张。</p><div class="blk"><div class="cside"><div class="ln">343–344</div><pre class="language-python"><code class="language-python">        if not self.is_ready() or self._vectorizer is None or self._matrix is None:
+            raise RuntimeError("尚未加载任何文档，无法检索")</code></pre></div><div class="nside">如果还没加载文档，直接报错——不能对着空气检索。</div></div><div class="blk"><div class="cside"><div class="ln">348–349</div><pre class="language-python"><code class="language-python">        k = top_k or self.top_k
+        k = max(1, min(k, len(self.chunks)))</code></pre></div><div class="nside">k = 最多返回几张，默认 4；但不能超过卡片总数（只有 15 张时不会要 20 张）。</div></div><div class="blk"><div class="cside"><div class="ln">350</div><pre class="language-python"><code class="language-python">        q_vec = self._vectorizer.transform([q])</code></pre></div><div class="nside">把你的问题也变成同样格式的「关键词档案」。注意是 transform 不是 fit：用已经建好的词表，不能重新学一套词，否则两边对不上。</div></div><div class="blk"><div class="cside"><div class="ln">351</div><pre class="language-python"><code class="language-python">        scores = cosine_similarity(q_vec, self._matrix).ravel()</code></pre></div><div class="nside">余弦相似度：算问题和每一张卡片的「方向重合度」，结果是一个 0~1 之间的数，越大越像。</div></div><div class="blk"><div class="cside"><div class="ln">352–353</div><pre class="language-python"><code class="language-python">        order = np.argsort(scores)[::-1][:k]
+        hits = [(self.chunks[i], float(scores[i])) for i in order if scores[i] &gt; 0]</code></pre></div><div class="nside">按分数从高到低排序，取前 k 个；`if scores[i] > 0` 表示 0 分的直接丢掉——所以有时只返回 3 条而不是 4 条。</div></div><div class="blk"><div class="cside"><div class="ln">354–356</div><pre class="language-python"><code class="language-python">        if not hits:
             # 即使相似度为 0，也返回最高分片段，便于前端提示
-            hits = [(self.chunks[int(order[0])], float(scores[int(order[0])]))]</pre></div><div class="nside">万一全都是 0 分，也硬塞一个最高分回去，好让界面上还能显示「我找了，但都不像」。</div></div><div class="blk"><div class="cside"><div class="ln">357–358</div><pre>        logger.info("检索完成 question=%r hits=%s", q[:40], [(h[0].chunk_id, round(h[1], 3)) for h in hits])
-        return hits</pre></div><div class="nside">记日志（包含每个卡片 id 和保留两位小数的分数），返回结果。</div></div></section><section class="fn" id="fn3"><h3>ask() 的判断部分 <span class="loc">rag_engine.py:400</span></h3><p class="what">拿到分数之后，决定「有依据就答，没依据就认怂」。</p><div class="blk"><div class="cside"><div class="ln">400</div><pre>        strong = [(c, s) for c, s in hits if s &gt;= min_score]</pre></div><div class="nside">只保留分数 ≥ min_score（默认 0.02）的卡片。这一步就是「门槛」。</div></div><div class="blk"><div class="cside"><div class="ln">401–409</div><pre>        if not strong:
+            hits = [(self.chunks[int(order[0])], float(scores[int(order[0])]))]</code></pre></div><div class="nside">万一全都是 0 分，也硬塞一个最高分回去，好让界面上还能显示「我找了，但都不像」。</div></div><div class="blk"><div class="cside"><div class="ln">357–358</div><pre class="language-python"><code class="language-python">        logger.info("检索完成 question=%r hits=%s", q[:40], [(h[0].chunk_id, round(h[1], 3)) for h in hits])
+        return hits</code></pre></div><div class="nside">记日志（包含每个卡片 id 和保留两位小数的分数），返回结果。</div></div></section><section class="fn"><h3 id="fn3">ask() 的判断部分 <span class="loc">rag_engine.py:400</span></h3><p class="what">拿到分数之后，决定「有依据就答，没依据就认怂」。</p><div class="blk"><div class="cside"><div class="ln">400</div><pre class="language-python"><code class="language-python">        strong = [(c, s) for c, s in hits if s &gt;= min_score]</code></pre></div><div class="nside">只保留分数 ≥ min_score（默认 0.02）的卡片。这一步就是「门槛」。</div></div><div class="blk"><div class="cside"><div class="ln">401–409</div><pre class="language-python"><code class="language-python">        if not strong:
             return AnswerResult(
                 question=q,
                 answer="根据当前文档，没有找到足够相关的依据，建议换个问法或检查上传的材料是否包含相关条款。",
@@ -526,14 +546,14 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
                 retrieved=retrieved,
                 status="no_evidence",
                 tier="low",
-            )</pre></div><div class="nside">所有片段都低于 0.02 → 直接判「没有依据」并返回，不进生成式、不调用大模型。（这就是原来的拒答闸，2026-11-14 起它只是<b>第一道</b>。）</div></div><div class="blk"><div class="cside"><div class="ln">411–418</div><pre>        # 三档判定：先数问句实词在 top1 块里命中几个。
+            )</code></pre></div><div class="nside">所有片段都低于 0.02 → 直接判「没有依据」并返回，不进生成式、不调用大模型。（这就是原来的拒答闸，2026-11-14 起它只是<b>第一道</b>。）</div></div><div class="blk"><div class="cside"><div class="ln">411–418</div><pre class="language-python"><code class="language-python">        # 三档判定：先数问句实词在 top1 块里命中几个。
         # matched = 0 → 一个都没命中，判 low，直接拒答；
         # matched = 1 → 只沾到一个词，判 medium，给最接近的原文并明确提示「没有直接写」；
         # matched ≥ 2 → 判 high，照常组织答案。
         top_chunk = hits[0][0]
         matched = _matched_terms(q, top_chunk.text)
         tier = "high" if matched &gt;= TIER_HIGH else ("medium" if matched &gt;= TIER_MEDIUM else "low")
-        logger.info("判定档位 tier=%s matched=%d q=%r", tier, matched, q[:30])</pre></div><div class="nside">三档判定：数问句里的实词在 top1 卡片里命中几个。≥2 判高置信，=1 判低置信，=0 判无依据。阈值 TIER_HIGH / TIER_MEDIUM 在文件顶部，是按开发集规则事先定的（见 experiments/dev_thresholds.py）。</div></div><div class="blk"><div class="cside"><div class="ln">430–452</div><pre>        if tier == "medium":
+        logger.info("判定档位 tier=%s matched=%d q=%r", tier, matched, q[:30])</code></pre></div><div class="nside">三档判定：数问句里的实词在 top1 卡片里命中几个。≥2 判高置信，=1 判低置信，=0 判无依据。阈值 TIER_HIGH / TIER_MEDIUM 在文件顶部，是按开发集规则事先定的（见 experiments/dev_thresholds.py）。</div></div><div class="blk"><div class="cside"><div class="ln">430–452</div><pre class="language-python"><code class="language-python">        if tier == "medium":
             # 只沾到一个实词：不拼答案，直接把最接近的一句原文摆出来，并说清这是「最接近」不是「答案」。
             nearest = _best_sentence(q, top_chunk.text)
             return AnswerResult(
@@ -555,18 +575,18 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
                 retrieved=retrieved,
                 status="low_confidence",
                 answer_mode="extractive",
-                tier="medium",</pre></div><div class="nside">低置信档：<b>不拼答案</b>，只把最接近的那一句原文摆出来，并明说「手册里没有直接写这件事」。状态是 low_confidence，和「查到了」在界面上长得不一样。</div></div><div class="blk"><div class="cside"><div class="ln">456–462</div><pre>        use_generative = (mode or "extractive").strip().lower() in {"generative", "generate", "llm"}
+                tier="medium",</code></pre></div><div class="nside">低置信档：<b>不拼答案</b>，只把最接近的那一句原文摆出来，并明说「手册里没有直接写这件事」。状态是 low_confidence，和「查到了」在界面上长得不一样。</div></div><div class="blk"><div class="cside"><div class="ln">456–462</div><pre class="language-python"><code class="language-python">        use_generative = (mode or "extractive").strip().lower() in {"generative", "generate", "llm"}
         answer_mode = "extractive"
         used: list[tuple[Chunk, float, str]] = []
         answer = ""
         try:
             if use_generative:
-                answer, used, answer_mode = self._try_generative_answer(q, strong)</pre></div><div class="nside">如果用户开了「生成式」，就让大模型来写答案；否则走抽取式（直接抄原文句子）。</div></div><div class="blk"><div class="cside"><div class="ln">464–469</div><pre>            if not answer:
+                answer, used, answer_mode = self._try_generative_answer(q, strong)</code></pre></div><div class="nside">如果用户开了「生成式」，就让大模型来写答案；否则走抽取式（直接抄原文句子）。</div></div><div class="blk"><div class="cside"><div class="ln">464–469</div><pre class="language-python"><code class="language-python">            if not answer:
                 answer, used = self._compose_answer(q, strong)
                 if use_generative:
                     answer_mode = "extractive_fallback"
                 else:
-                    answer_mode = "extractive"</pre></div><div class="nside">关键保底：生成式没给出内容（没配密钥、返回空）就退回抽取式，保证一定有答案。注意：如果调用直接抛异常，走的是 470 行的 except 分支（记一条 error 日志），不是降级。</div></div><div class="blk"><div class="cside"><div class="ln">482–491</div><pre>        citations = [
+                    answer_mode = "extractive"</code></pre></div><div class="nside">关键保底：生成式没给出内容（没配密钥、返回空）就退回抽取式，保证一定有答案。注意：如果调用直接抛异常，走的是 470 行的 except 分支（记一条 error 日志），不是降级。</div></div><div class="blk"><div class="cside"><div class="ln">482–491</div><pre class="language-python"><code class="language-python">        citations = [
             Citation(
                 chunk_id=chunk.chunk_id,
                 source=chunk.source,
@@ -575,7 +595,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
                 score=round(score, 4),
             )
             for chunk, score, sent in used
-        ]</pre></div><div class="nside">把「答案用了哪几句、来自哪张卡片」整理成引用列表，给界面显示「依据：campus_handbook-007」。</div></div><div class="blk"><div class="cside"><div class="ln">492–500</div><pre>        # 去重但保留顺序
+        ]</code></pre></div><div class="nside">把「答案用了哪几句、来自哪张卡片」整理成引用列表，给界面显示「依据：campus_handbook-007」。</div></div><div class="blk"><div class="cside"><div class="ln">492–500</div><pre class="language-python"><code class="language-python">        # 去重但保留顺序
         seen: set[str] = set()
         unique_citations: list[Citation] = []
         for cit in citations:
@@ -583,7 +603,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
             if key in seen:
                 continue
             seen.add(key)
-            unique_citations.append(cit)</pre></div><div class="nside">引用去重：同一张卡片只显示一次，但保持原来的先后顺序。</div></div></section><section class="fn" id="fn4"><h3>_compose_answer() <span class="loc">rag_engine.py:545</span></h3><p class="what">抽取式作答：从命中的卡片里，挑最贴问题的几句话，拼成一段人话。</p><div class="blk"><div class="cside"><div class="ln">545–554</div><pre>        candidates: list[tuple[str, Chunk, float]] = []
+            unique_citations.append(cit)</code></pre></div><div class="nside">引用去重：同一张卡片只显示一次，但保持原来的先后顺序。</div></div></section><section class="fn"><h3 id="fn4">_compose_answer() <span class="loc">rag_engine.py:543</span></h3><p class="what">抽取式作答：从命中的卡片里，挑最贴问题的几句话，拼成一段人话。</p><div class="blk"><div class="cside"><div class="ln">545–554</div><pre class="language-python"><code class="language-python">        candidates: list[tuple[str, Chunk, float]] = []
         for chunk, score in hits:
             sentences = _split_sentences(chunk.text)
             if not sentences:
@@ -592,12 +612,12 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
             for sent in sentences:
                 if len(sent) &lt; 6 or _is_heading(sent):
                     continue
-                candidates.append((sent, chunk, score))</pre></div><div class="nside">把每张命中卡片拆成句子，逐句当候选；太短的（少于 6 字）和纯标题的丢掉，因为这些当答案没意义。</div></div><div class="blk"><div class="cside"><div class="ln">560–563</div><pre>        sent_texts = [c[0] for c in candidates]
+                candidates.append((sent, chunk, score))</code></pre></div><div class="nside">把每张命中卡片拆成句子，逐句当候选；太短的（少于 6 字）和纯标题的丢掉，因为这些当答案没意义。</div></div><div class="blk"><div class="cside"><div class="ln">560–563</div><pre class="language-python"><code class="language-python">        sent_texts = [c[0] for c in candidates]
         vec = TfidfVectorizer(analyzer=_jieba_analyzer, min_df=1, sublinear_tf=True, norm="l2")
         try:
-            mat = vec.fit_transform(sent_texts + [question])</pre></div><div class="nside">把「所有候选句子 + 你的问题」放在一起算一次相似度。这样比的是「句子 vs 问题」，而不是「整段 vs 问题」，更精确。</div></div><div class="blk"><div class="cside"><div class="ln">570–572</div><pre>        # 结合检索分，避免只看句子字面重合
+            mat = vec.fit_transform(sent_texts + [question])</code></pre></div><div class="nside">把「所有候选句子 + 你的问题」放在一起算一次相似度。这样比的是「句子 vs 问题」，而不是「整段 vs 问题」，更精确。</div></div><div class="blk"><div class="cside"><div class="ln">570–572</div><pre class="language-python"><code class="language-python">        # 结合检索分，避免只看句子字面重合
         combined = sm + 0.15 * np.array([c[2] for c in candidates], dtype=float)
-        ranked_idx = np.argsort(combined)[::-1]</pre></div><div class="nside">综合分 = 句子相似度 + 0.15 × 所在段落的检索分。加这一项是为了让「来自高分段落」的句子略微占优。</div></div><div class="blk"><div class="cside"><div class="ln">577–586</div><pre>        for i in ranked_idx:
+        ranked_idx = np.argsort(combined)[::-1]</code></pre></div><div class="nside">综合分 = 句子相似度 + 0.15 × 所在段落的检索分。加这一项是为了让「来自高分段落」的句子略微占优。</div></div><div class="blk"><div class="cside"><div class="ln">577–586</div><pre class="language-python"><code class="language-python">        for i in ranked_idx:
             if combined[i] &lt;= 0:
                 break
             sent, chunk, score = candidates[int(i)]
@@ -606,22 +626,22 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
                 continue
             # 已选句子已覆盖该句大部分字时跳过，换一条信息量更高的
             if any(key[:18] in seen or seen[:18] in key for seen in seen_sent if len(seen) &gt;= 18 or len(key) &gt;= 18):
-                continue</pre></div><div class="nside">从高分往低挑，两种去重：完全相同的句子跳过；新句子前 18 个字和已选句子有重叠（`key[:18] in seen`）也跳过，避免车轱辘话。</div></div><div class="blk"><div class="cside"><div class="ln">588–590</div><pre>            ending = "。" if not sent.endswith(("。", "！", "？", ".", "!", "?", "；", ";")) else ""
+                continue</code></pre></div><div class="nside">从高分往低挑，两种去重：完全相同的句子跳过；新句子前 18 个字和已选句子有重叠（`key[:18] in seen`）也跳过，避免车轱辘话。</div></div><div class="blk"><div class="cside"><div class="ln">588–590</div><pre class="language-python"><code class="language-python">            ending = "。" if not sent.endswith(("。", "！", "？", ".", "!", "?", "；", ";")) else ""
             pieces.append(sent + ending)
-            picked.append((chunk, score, sent))</pre></div><div class="nside">给句子补个句号（如果原来没有），然后收进答案。</div></div><div class="blk"><div class="cside"><div class="ln">591–592</div><pre>            if len(pieces) &gt;= 4:
-                break</pre></div><div class="nside">最多只要 4 句——这是作者定的人为上限，防止整段抄下来。</div></div><div class="blk"><div class="cside"><div class="ln">598–600</div><pre>        answer = "".join(pieces)
+            picked.append((chunk, score, sent))</code></pre></div><div class="nside">给句子补个句号（如果原来没有），然后收进答案。</div></div><div class="blk"><div class="cside"><div class="ln">591–592</div><pre class="language-python"><code class="language-python">            if len(pieces) &gt;= 4:
+                break</code></pre></div><div class="nside">最多只要 4 句——这是作者定的人为上限，防止整段抄下来。</div></div><div class="blk"><div class="cside"><div class="ln">598–600</div><pre class="language-python"><code class="language-python">        answer = "".join(pieces)
         refs = "、".join(dict.fromkeys(p[0].chunk_id for p in picked))
-        answer = f"{answer}\n\n（依据：{refs}）"</pre></div><div class="nside">把句子拼起来，末尾加上「（依据：卡片编号）」。</div></div></section><section class="fn" id="fn5"><h3>界面怎么接引擎 <span class="loc">app.py:54</span></h3><p class="what">Streamlit 页面本身不存东西，每次刷新都重跑一遍脚本，所以引擎要挂在 session_state 上。</p><div class="blk"><div class="cside"><div class="ln">54–60</div><pre>def _init_engine() -&gt; RAGEngine:
+        answer = f"{answer}\n\n（依据：{refs}）"</code></pre></div><div class="nside">把句子拼起来，末尾加上「（依据：卡片编号）」。</div></div></section><section class="fn"><h3 id="fn5">界面怎么接引擎 <span class="loc">app.py:54</span></h3><p class="what">Streamlit 页面本身不存东西，每次刷新都重跑一遍脚本，所以引擎要挂在 session_state 上。</p><div class="blk"><div class="cside"><div class="ln">54–60</div><pre class="language-python"><code class="language-python">def _init_engine() -&gt; RAGEngine:
     if "engine" not in st.session_state:
         st.session_state.engine = RAGEngine()
         st.session_state.doc_label = "尚未加载文档"
         st.session_state.chunk_count = 0
         st.session_state.load_error = ""
-    return st.session_state.engine</pre></div><div class="nside">第一次打开页面时创建引擎，放进 session_state（相当于「这个浏览器标签页的储物柜」），之后再取就用同一个。</div></div><div class="blk"><div class="cside"><div class="ln">63–67</div><pre>def _load_handbook() -&gt; None:
+    return st.session_state.engine</code></pre></div><div class="nside">第一次打开页面时创建引擎，放进 session_state（相当于「这个浏览器标签页的储物柜」），之后再取就用同一个。</div></div><div class="blk"><div class="cside"><div class="ln">63–67</div><pre class="language-python"><code class="language-python">def _load_handbook() -&gt; None:
     engine: RAGEngine = st.session_state.engine
     try:
         n = engine.load_default_handbook()
-        st.session_state.doc_label = "示例：《青禾大学学生手册》"</pre></div><div class="nside">点「加载示例手册」→ 调 engine.load_default_handbook()，返回切了多少段。</div></div><div class="blk"><div class="cside"><div class="ln">218–230</div><pre>    if result.status == "error":
+        st.session_state.doc_label = "示例：《青禾大学学生手册》"</code></pre></div><div class="nside">点「加载示例手册」→ 调 engine.load_default_handbook()，返回切了多少段。</div></div><div class="blk"><div class="cside"><div class="ln">218–230</div><pre class="language-python"><code class="language-python">    if result.status == "error":
         st.error(result.error or "提问失败")
         return
 
@@ -633,7 +653,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
     if result.status == "no_evidence":
         st.warning(result.answer)
         render_citations("检索到的片段（相关度不足）", result.retrieved, "weak")
-        return</pre></div><div class="nside">结果分三种情况：出错 → 红字；没依据 → 黄字提醒 + 列出弱相关片段；正常 → 往下显示答案。</div></div><div class="blk"><div class="cside"><div class="ln">232–240</div><pre>    st.subheader("答案")
+        return</code></pre></div><div class="nside">结果分三种情况：出错 → 红字；没依据 → 黄字提醒 + 列出弱相关片段；正常 → 往下显示答案。</div></div><div class="blk"><div class="cside"><div class="ln">232–240</div><pre class="language-python"><code class="language-python">    st.subheader("答案")
     # 展示实际采用的路径：用户选了生成式但引擎降级时，用警告说明，避免误以为仍是模型作答。
     if result.answer_mode == "generative":
         st.caption("回答方式：生成式")
@@ -641,7 +661,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
         st.warning("生成式不可用或调用失败，已自动改用抽取式答案。")
     else:
         st.caption("回答方式：抽取式")
-    st.write(result.answer)</pre></div><div class="nside">显示答案，并诚实标注「这次是生成式还是抽取式」；如果用户选了生成式但降级了，用黄色警告说明。</div></div></section>
+    st.write(result.answer)</code></pre></div><div class="nside">显示答案，并诚实标注「这次是生成式还是抽取式」；如果用户选了生成式但降级了，用黄色警告说明。</div></div></section>
 </div>
 
 <div class="panel" id="bad">
@@ -650,7 +670,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
   <div class="warn"><h4>卡片曾经是按字数硬切的（已修）</h4><p>旧版 12 段里有 3 段超过 280 字（293 / 304 / 299），被按 220 字一格硬切，于是第 4、8、10 张卡片从句子中间开始：-004 以「。」开头，-008 以「重警告处分；因此造成火情的，从重处理。」开头，-010 以「费为 20 元，挂失成功后原卡即时失效」开头——那种没头没尾的片段，检索到也没法用。</p><p><b>2026-11-14 已改成「条 → 句」两级切分</b>：先按「第 X 条」分条，条内按句号分句，280 字降级成上限（只在单句超长时才硬切）。现在 15 张卡片都从「章 / 条 / 附则」边界开始，切点只落在句子之间。上面代码批注里的 <code>_units_of()</code> 和 <code>_pack_sentences()</code> 就是新逻辑。</p></div><div class="warn"><h4>及格线 0.02 太低，等于没有</h4><p>问「学校附近哪家火锅好吃？」，问句 6 个词里只有「学校」在词表里，而「学校」几乎每章都有。就靠这一个词，三张卡片拿到 0.0879 / 0.0856 / 0.0835，全部过线，status=ok，答案讲的是社团、毕业证、校园网。</p><p class="ev">查证方式：把问句向量里非零的项列出来，只剩一个「学校」；余弦相似度基本就等于这一项的贡献。</p></div><div class="warn"><h4>评测 15 题全 1.00，测不出上面两个问题</h4><p>那 15 道题全是「手册里确实写了」的题，一条拒答用例都没有。所以它只能证明「问手册里有的，它能答」，证明不了「问手册里没有的，它会说不知道」。</p><p class="ev">答辩被问「怎么保证不乱答」时，这是最容易被追问的点。</p></div>
   <h2>自测 6 问</h2>
   <p class="lead">先自己说一遍，再点开看。能用自己的话讲清楚，这项目才算你的。</p>
-  <details><summary>为什么要把手册切成 15 段，而不是整本塞进去？</summary><p>整本塞进去有两个问题：一是太长，二是没法知道答案来自哪一段。切开之后才能「找出最相关的几段」，也才能标引用。</p></details><details><summary>280 / 60 这两个数字分别管什么？</summary><p>280 = 一张卡片最多多少字；60 = 相邻卡片重叠多少字（防止一句话正好被切在边界）。步长 = 280 - 60 = 220。</p></details><details><summary>什么是「向量」？用这个项目解释。</summary><p>就是「每个词有多重要」的一串分数。15 张卡片 × 1857 个词，每张卡片就是一行 1857 个数字。</p></details><details><summary>为什么检索用 transform，建索引用 fit_transform？</summary><p>建索引时要「学」出词表，所以用 fit_transform；提问时必须用同一套词表，只能 transform，否则两边的词对不上，分数就没意义。</p></details><details><summary>「宿舍几点熄灯」只返回 3 条，不是 top_k=4 吗？</summary><p>top_k 是上限。第 4 名分数是 0，被 retrieve() 里的 `if scores[i] > 0` 过滤掉了。</p></details><details><summary>如果只让你改一处，让它更可靠，你改哪儿？</summary><p>改切段：按句子/段落边界切，保证每张卡片从完整句子开始。这一处同时修好「半句开头」和一部分「答非所问」。</p></details>
+  <details><summary>为什么要把手册切成 15 段，而不是整本塞进去？</summary><p>整本塞进去有两个问题：一是太长，二是没法知道答案来自哪一段。切开之后才能「找出最相关的几段」，也才能标引用。</p></details><details><summary>280 / 60 这两个数字分别管什么？</summary><p>280 = 一张卡片最多多少字；60 = 相邻卡片最多重叠多少字，用来避免一句正好被切在边界上。现在不是按固定步长 220 个字去滑动硬切，而是先按「条」和句子边界打包，重叠也只发生在完整的单位上。</p></details><details><summary>什么是「向量」？用这个项目解释。</summary><p>就是「每个词有多重要」的一串分数。15 张卡片 × 1857 个词，每张卡片就是一行 1857 个数字。</p></details><details><summary>为什么检索用 transform，建索引用 fit_transform？</summary><p>建索引时要「学」出词表，所以用 fit_transform；提问时必须用同一套词表，只能 transform，否则两边的词对不上，分数就没意义。</p></details><details><summary>「宿舍几点熄灯」只返回 3 条，不是 top_k=4 吗？</summary><p>top_k 是上限。第 4 名分数是 0，被 retrieve() 里的 `if scores[i] > 0` 过滤掉了。</p></details><details><summary>如果只让你改一处，让它更可靠，你改哪儿？</summary><p>改切段：按句子/段落边界切，保证每张卡片从完整句子开始。这一处同时修好「半句开头」和一部分「答非所问」。</p></details>
 </div>
 </main>
 <footer>由贾维斯生成 · 数据源：15 段 / 1857 词 / 15 题评测</footer>
@@ -696,6 +716,13 @@ document.querySelectorAll('[data-go]').forEach(a=>a.onclick=(e)=>{
   });
 })();
 </script>
+
+<script src="assets/vendor/lenis/lenis.min.js?v=19"></script>
+<script src="assets/vendor/tocbot/tocbot.min.js?v=19"></script>
+<script src="assets/vendor/prism/prism.min.js?v=19"></script>
+<script src="assets/vendor/prism/components/prism-python.min.js?v=19"></script>
+<script src="assets/fx.js?v=19"></script>
+<script src="assets/liquid-glass.js?v=19"></script>
 </body></html>
 
 
