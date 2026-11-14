@@ -1,0 +1,7 @@
+{
+  "frozen_at": "2026-11-14T20:25+08:00",
+  "rule": "信号选开发集上对难负例 AUC 最高者（matched，AUC 0.87）；low = 开发集留出正例 matched 的 10% 分位 = 1；high = 开发集全部负例 matched 的最大值 = 2。规则与数字在跑冻结集之前写定，未做任何搜索。",
+  "dev_set": "训练正例 15（evaluation.EVAL_CASES）+ 留出正例 12（heldout_check.HELDOUT_POS）+ 负例 31（threshold_scan 去重后 + HARD_NEG + negative_probe 20）",
+  "dev_script": "experiments/dev_thresholds.py",
+  "tiers": { "signal": "matched", "high": 2, "low": 1 }
+}

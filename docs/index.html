@@ -321,7 +321,16 @@ li.collapsed > ul.kids{display:none}
           <li><div class="nd">对<b>话题内缺失</b>：命中词数 <span class="mono">0.87</span>、覆盖率 <span class="mono">0.85</span>、top1 <span class="mono">0.77</span>、分差 <span class="mono">0.76</span>——全线比离题低 0.1 左右</div></li>
           <li><div class="nd"><b>过拟合陷阱的教科书样本</b>：同一批信号，拿<b>训练正例</b>对离题负例算，分差 AUC = <span class="mono">1.00</span>；换成留出正例，掉到 <span class="mono">0.94</span>；再换到话题内缺失负例，只剩 <span class="mono">0.76</span>。<b>同一套代码，三个数字 = 0.76 / 0.94 / 1.00，取决于你拿谁去算。</b></div></li>
           <li><div class="nd">所以「分差」在这批难负例上只有 <span class="mono">0.723</span>——训练集上的干净是假象。词面信号分不开「同义词」和「真没写」，这不是调参能解决的</div></li>
-          <li><div class="nd"><span class="bad">结论</span>单靠一个分数阈值判「有没有依据」，在这份手册上<b>不成立</b>——要么全放行、要么误拒一半。<b>这条负面结果比一个漂亮阈值更有价值</b>。下一步不是「把三个信号加权投票」那种凑法：<b>离题的能拒，话题内缺失的只能降档提示</b>（给出最接近的原文 + 一句「可能没直接回答你」），阈值留给交叉验证，最后再拿一份别人写的新题测一次</div></li>
+          <li><div class="nd"><b>冻结测试</b>（外部评审另写 60 题：30 正例 + 15 离题 + 15 「话题在手册里、这件事没写」，<b>写题时他看不到我的样本和分数</b>；<span class="mono">frozen_testset.json</span> + <span class="mono">run_frozen_test.py</span>）：跑之前先 <span class="mono">--check</span> 体检——正例关键词都在手册里、缺失类的关键词都不在、与已有 60 题无重复，通过</li>
+          <li><div class="nd">阈值在<b>看分数之前</b>就写定（<span class="mono">frozen_config.json</span>）：信号选开发集上对难负例 AUC 最高的 <span class="mono">matched</span>（0.87），低档 <span class="mono">≥1</span>、高档 <span class="mono">≥2</span>，规则与数字都写进文件，没做搜索</li>
+          <li><div class="nd">检索：hit@1 <b>27/30</b>（95% 区间 74%–97%），hit@4 <b>30/30</b>（89%–100%）——检索本身是稳的</li>
+          <li><div class="nd">三档结果：正例（检索正确的 27 条）高置信 22、低置信 5、<b>误拒 0</b>；离题负例<b>硬答 0/15</b>；话题内缺失负例<b>硬答 11/15</b>（95% 区间 48%–89%）</li>
+          <li><div class="nd">各信号 AUC · 对<b>离题</b>：top1 <span class="mono">0.98</span>、分差 <span class="mono">0.99</span>、覆盖率 <span class="mono">0.99</span>、命中词数 <span class="mono">0.99</span>——几乎全分得开</li>
+          <li><div class="nd">各信号 AUC · 对<b>话题内缺失</b>：只有覆盖率 <span class="mono">0.77</span> [0.60, 0.91] 还看得出一点，top1 <span class="mono">0.55</span>、分差 <span class="mono">0.62</span>、命中词数 <span class="mono">0.59</span> 全部贴着 0.5</div></li>
+          <li><div class="nd">所以这套系统的真实上限是：<b>能拒「跟手册无关」，拒不了「话题在、这件事没写」</b>。后者会给出一个看起来很像答案、其实答错的东西——这正是最危险的失效方式，也是我下一步要修的地方</li>
+          <li><div class="nd">写结果时的口径：15 条一组里 0 次硬答错，只能说<b>上界约 20%</b>，不能说「没有」；30 条全过只能说<b>下界约 89%</b></li>
+          <li><div class="nd">体检之外我人工过了一遍那 15 条缺失负例：<span class="mono">M07</span>「调换宿舍床位要提前几天申请」最边缘（第十五条只写「不得擅自调换」），保留原题但在结果里标注，没有改动</li>
+          <li><div class="nd"><span class="bad">结论</span>单靠一个分数阈值判「有没有依据」，在这份手册上<b>不成立</b>——要么全放行、要么误拒一半。<b>这条负面结果比一个漂亮阈值更有价值</b>。下一步不是「把三个信号加权投票」那种凑法：<b>离题的能拒，话题内缺失的只能降档提示</b>（给出最接近的原文 + 一句「可能没直接回答你」），阈值留给交叉验证，最后再拿一份别人写的新题测一次。<b>冻结集已经给了答案：离题拒得掉（0/15 硬答），话题内缺失拒不掉（11/15 硬答）</b></div></li>
         </ul>
       </li>
 
