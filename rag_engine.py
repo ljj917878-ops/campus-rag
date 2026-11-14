@@ -51,6 +51,8 @@ class AnswerResult:
     error: str | None = None
     # 实际采用的作答路径：extractive / generative / extractive_fallback（生成失败后的降级）
     answer_mode: str = "extractive"
+    # 置信档位：high（照常作答）/ medium（问句实词只命中 1 个，给最接近原文并提示）/ low（一个都没命中，拒答）
+    tier: str = "high"
 
     def to_dict(self) -> dict:
         return {
@@ -59,10 +61,34 @@ class AnswerResult:
             "status": self.status,
             "error": self.error,
             "answer_mode": self.answer_mode,
+            "tier": self.tier,
             "citations": [asdict(c) for c in self.citations],
             "retrieved": [asdict(c) for c in self.retrieved],
         }
 
+
+
+# 问句里的高频疑问词，含区分度的实词才算命中。
+STOP_TERMS = set(
+    "什么 怎么 怎样 如何 多少 可以 能否 是否 需要 应该 请问 一个 一般 哪些 哪里 为什么 "
+    "多久 几天 几点 有没有 要不要 能不能 可不可以 是不是 以及 或者 还是 还有 如果 因为 所以".split()
+)
+
+# 开发集上按事先规则定出：matched 是开发集里对难负例 AUC 最高的信号（0.87）。
+# low = 开发集正例的 10% 分位 = 1，high = 开发负例最大值 = 2。规则与数字见 experiments/dev_thresholds.py
+TIER_HIGH = 2
+TIER_MEDIUM = 1
+
+
+def _content_terms(question: str) -> list[str]:
+    """问句里长度 ≥2、且不是疑问词的实词，去重保序。"""
+    terms = [t for t in _tokenize(question.lower()) if len(t) >= 2 and t not in STOP_TERMS]
+    return list(dict.fromkeys(terms))
+
+
+def _matched_terms(question: str, chunk_text: str) -> int:
+    ctx = re.sub(r"\s+", "", _normalize_whitespace(chunk_text)).lower()
+    return sum(1 for t in _content_terms(question) if t in ctx)
 
 def _tokenize(text: str) -> list[str]:
     return [tok.strip() for tok in jieba.lcut(text) if tok.strip() and not tok.isspace()]
@@ -95,8 +121,79 @@ def _guess_section(block: str, fallback: str) -> str:
     return fallback
 
 
+_ARTICLE_SPLIT = re.compile(r"(?=第[一二三四五六七八九十百零\d]+条)")
+
+
+def _units_of(para: str, chunk_size: int) -> list[str]:
+    """把一段拆成「不被切断的最小单位」：优先条，条太长再按句子，句子还太长才按字符。
+
+    这样保证切点只出现在条与条之间、句号之后，不会出现「…没收器具并视」这种半句。
+    """
+    units: list[str] = []
+    for art in _ARTICLE_SPLIT.split(para):
+        if not art.strip():
+            continue
+        if len(art) <= chunk_size:
+            units.append(art)
+            continue
+        for sent in _SENTENCE_SPLIT.split(art):
+            if not sent.strip():
+                continue
+            if len(sent) <= chunk_size:
+                units.append(sent)
+            else:  # 极端情况：单句超过块上限，只能硬切
+                for off in range(0, len(sent), chunk_size):
+                    units.append(sent[off : off + chunk_size])
+    return units
+
+
+def _pack_sentences(para: str, chunk_size: int, overlap: int) -> list[tuple[str, int]]:
+    """把最小单位打包成若干块，返回 [(块文本, 段内偏移)]。
+
+    - 切点只落在条与条之间或句号之后；
+    - 相邻块之间保留至多 overlap 个字符的整单位重叠，用来救边界。
+    """
+    units = _units_of(para, chunk_size)
+    if not units:
+        return []
+
+    pieces: list[list[str]] = []
+    buf: list[str] = []
+    size = 0
+    for unit in units:
+        if buf and size + len(unit) > chunk_size:
+            pieces.append(buf)
+            tail: list[str] = []
+            tail_size = 0
+            for back in reversed(buf):
+                if tail_size + len(back) <= overlap:
+                    tail.insert(0, back)
+                    tail_size += len(back)
+                else:
+                    break
+            buf = tail[:]
+            size = tail_size
+        buf.append(unit)
+        size += len(unit)
+    if buf:
+        pieces.append(buf)
+
+    out: list[tuple[str, int]] = []
+    cursor = 0
+    for group in pieces:
+        text = "".join(group).strip()
+        if not text:
+            continue
+        idx = para.find(text, cursor)
+        if idx < 0:
+            idx = cursor
+        out.append((text, idx))
+        cursor = idx + len(text)
+    return out
+
+
 def split_into_chunks(text: str, source: str, chunk_size: int = 280, overlap: int = 60) -> list[Chunk]:
-    """按段落优先切分，超长段落再按字符窗口切分。"""
+    """按段落优先切分；长段落按句子边界打包，不切断句子。"""
     if chunk_size <= 0:
         raise ValueError("chunk_size 必须为正整数")
     if overlap >= chunk_size:
@@ -124,28 +221,13 @@ def split_into_chunks(text: str, source: str, chunk_size: int = 280, overlap: in
         if re.match(r"^(第[一二三四五六七八九十百零\d]+[章节].*)", section_hit) or section_hit.startswith("附则"):
             current_section = section_hit
         if len(para) <= chunk_size:
-            chunk_id = f"{Path(source).stem}-{seq:03d}"
+            pieces = [(para, 0)]
+        else:
+            pieces = _pack_sentences(para, chunk_size, overlap)
+        for piece, off in pieces:
             chunks.append(
                 Chunk(
-                    chunk_id=chunk_id,
-                    text=para,
-                    source=source,
-                    section=current_section,
-                    start_char=start,
-                    end_char=start + len(para),
-                )
-            )
-            seq += 1
-            continue
-        step = max(1, chunk_size - overlap)
-        for off in range(0, len(para), step):
-            piece = para[off : off + chunk_size].strip()
-            if not piece:
-                continue
-            chunk_id = f"{Path(source).stem}-{seq:03d}"
-            chunks.append(
-                Chunk(
-                    chunk_id=chunk_id,
+                    chunk_id=f"{Path(source).stem}-{seq:03d}",
                     text=piece,
                     source=source,
                     section=_guess_section(piece, current_section),
@@ -154,8 +236,6 @@ def split_into_chunks(text: str, source: str, chunk_size: int = 280, overlap: in
                 )
             )
             seq += 1
-            if off + chunk_size >= len(para):
-                break
     logger.info("文档切分完成 source=%s chunks=%d", source, len(chunks))
     return chunks
 
@@ -165,6 +245,20 @@ def _split_sentences(text: str) -> list[str]:
     if not parts:
         return [text.strip()] if text.strip() else []
     return parts
+
+
+def _best_sentence(question: str, text: str) -> str:
+    """从块里挑与问句实词重合最多的一句原文；都不含实词就取第一句。"""
+    terms = _content_terms(question)
+    sentences = [s.strip() for s in _SENTENCE_SPLIT.split(text) if s.strip()]
+    if not sentences:
+        return text.strip()
+    best, best_hit = sentences[0], -1
+    for s in sentences:
+        hit = sum(1 for t in terms if t in s.lower())
+        if hit > best_hit:
+            best, best_hit = s, hit
+    return best
 
 
 def _snippet(text: str, limit: int = 160) -> str:
@@ -311,6 +405,51 @@ class RAGEngine:
                 citations=[],
                 retrieved=retrieved,
                 status="no_evidence",
+                tier="low",
+            )
+
+        # 三档判定：先数问句实词在 top1 块里命中几个。
+        # matched = 0 → 一个都没命中，判 low，直接拒答；
+        # matched = 1 → 只沾到一个词，判 medium，给最接近的原文并明确提示「没有直接写」；
+        # matched ≥ 2 → 判 high，照常组织答案。
+        top_chunk = hits[0][0]
+        matched = _matched_terms(q, top_chunk.text)
+        tier = "high" if matched >= TIER_HIGH else ("medium" if matched >= TIER_MEDIUM else "low")
+        logger.info("判定档位 tier=%s matched=%d q=%r", tier, matched, q[:30])
+
+        if tier == "low":
+            return AnswerResult(
+                question=q,
+                answer="根据当前文档，没有找到足够相关的依据，建议换个问法或检查上传的材料是否包含相关条款。",
+                citations=[],
+                retrieved=retrieved,
+                status="no_evidence",
+                tier="low",
+            )
+
+        if tier == "medium":
+            # 只沾到一个实词：不拼答案，直接把最接近的一句原文摆出来，并说清这是「最接近」不是「答案」。
+            nearest = _best_sentence(q, top_chunk.text)
+            return AnswerResult(
+                question=q,
+                answer=(
+                    "手册里没有直接写这件事。最接近的原文是：\n\n"
+                    f"{nearest}\n\n"
+                    "这条只能当参考，不是我查到的规定；如果事情重要，建议直接问辅导员或对应部门。"
+                ),
+                citations=[
+                    Citation(
+                        chunk_id=top_chunk.chunk_id,
+                        source=top_chunk.source,
+                        section=top_chunk.section,
+                        snippet=_snippet(nearest),
+                        score=round(hits[0][1], 4),
+                    )
+                ],
+                retrieved=retrieved,
+                status="low_confidence",
+                answer_mode="extractive",
+                tier="medium",
             )
 
         # 生成式是可选项：开关打开才尝试；返回空答案视为需要降级。
@@ -367,6 +506,7 @@ class RAGEngine:
             retrieved=retrieved,
             status="ok",
             answer_mode=answer_mode,
+            tier="high",
         )
 
     def _try_generative_answer(

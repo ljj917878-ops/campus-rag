@@ -219,6 +219,11 @@ def main() -> None:
         st.error(result.error or "提问失败")
         return
 
+    if result.status == "low_confidence":
+        st.warning(result.answer)
+        render_citations("最接近的原文（不是答案）", result.citations, "weak")
+        return
+
     if result.status == "no_evidence":
         st.warning(result.answer)
         render_citations("检索到的片段（相关度不足）", result.retrieved, "weak")

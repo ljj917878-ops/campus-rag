@@ -134,6 +134,7 @@ ul.kids > li:first-child::before{top:25px}
 li.collapsed > .nd.lv1 .chev{transform:rotate(-45deg)}
 li.collapsed > ul.kids{display:none}
 .bad{font-size:12px;color:var(--amber);background:rgba(242,160,106,.12);border:1px solid var(--amber-line);border-radius:999px;padding:1px 8px;white-space:nowrap}
+.ok{font-size:12px;color:var(--green);background:rgba(61,220,151,.12);border:1px solid var(--green-line);border-radius:999px;padding:1px 8px;white-space:nowrap}
 .dp{margin:4px 0}
 .dp > summary{list-style:none;cursor:pointer;font-size:14px;color:var(--ink-2);background:var(--bg-2);border:1px dashed #33414f;border-radius:10px;padding:8px 12px}
 .dp > summary::-webkit-details-marker{display:none}
@@ -250,7 +251,7 @@ li.collapsed > ul.kids{display:none}
         <div class="nd lv1 has-kids"><span class="no">02</span><b>它怎么跑：七步</b><span class="val">启动跑 3 步 · 每次提问跑 4 步</span><i class="chev"></i></div>
         <ul class="kids">
           <li><div class="nd"><b>01 读入</b>：按空行切 12 段，记每段起始位置 <code>rag_engine.py:109</code></div></li>
-          <li><div class="nd"><b>02 切分</b>：280 字一张、相邻重叠 60 → 15 张 <code>:98</code> <span class="bad">缺陷 #1</span></div></li>
+          <li><div class="nd"><b>02 切分</b>：先按「第 X 条」分条，条内按句号分句，280 字只是上限 → 15 张（共 2647 字符，平均 176）<code>:98</code> <span class="ok">#1 已修</span></div></li>
           <li><div class="nd"><b>03 索引</b>：先用 jieba 把中文切成词（<span class="mono">宿舍/几点/熄灯</span>），再把 15 张卡片 × 1857 个词的权重算成一张表（这就是 TF-IDF），只在启动时建一次 <code>:237</code></div></li>
           <li><div class="nd"><b>04 检索</b>：问题也用同一套词表转成权重，再和 15 张卡片逐个比「方向像不像」（余弦相似度：只看朝向，不看句子长短），取最像的 4 张 <code>:248</code></div></li>
           <li><div class="nd"><b>05 判定</b>：最高分低于门槛（0.02）就直接回 <span class="mono">no_evidence</span>——意思是「判定为没有依据」，此时不调模型、直说不知道 <code>:274/:306</code> <span class="bad">缺陷 #2</span></div></li>
@@ -264,7 +265,7 @@ li.collapsed > ul.kids{display:none}
         <div class="nd lv1 has-kids"><span class="no">03</span><b>四个数字怎么定的</b><span class="val">280 / 60 / 4 / 0.02</span><i class="chev"></i></div>
         <ul class="kids">
           <li><div class="nd"><b>280</b> 拍定的默认值，无标定；12 段里只有 3 段超过它，9 段整段通过</div></li>
-          <li><div class="nd"><b>60</b> 取 280 的 21%，防断句；代价是重复 157 字（15 块共 2830 字）</div></li>
+          <li><div class="nd"><b>60</b> 取 280 的 21%，防断句；改成整句/整条重叠后，15 块共 2647 字符（比原来的 2830 少，重复也少了）</div></li>
           <li><div class="nd"><b>4</b> 折中：取 1 怕漏、取 15 等于没检索；4 块 ≈ 1100 字</div></li>
           <li><div class="nd"><b>0.02</b> 没标定过，<b>几乎什么都放行</b>：34 个负例里 29 个能过闸（最高 0.2014）</div></li>
           <li>
@@ -330,7 +331,8 @@ li.collapsed > ul.kids{display:none}
           <li><div class="nd">所以这套系统的真实上限是：<b>能拒「跟手册无关」，拒不了「话题在、这件事没写」</b>。后者会给出一个看起来很像答案、其实答错的东西——这正是最危险的失效方式，也是我下一步要修的地方</div></li>
           <li><div class="nd">写结果时的口径：15 条一组里 0 次硬答错，只能说<b>上界约 20%</b>，不能说「没有」；30 条全过只能说<b>下界约 89%</b></div></li>
           <li><div class="nd">体检之外我人工过了一遍那 15 条缺失负例：<span class="mono">M07</span>「调换宿舍床位要提前几天申请」最边缘（第十五条只写「不得擅自调换」），保留原题但在结果里标注，没有改动</div></li>
-          <li><div class="nd"><span class="bad">结论</span>单靠一个分数阈值判「有没有依据」，在这份手册上<b>不成立</b>——要么全放行、要么误拒一半。<b>这条负面结果比一个漂亮阈值更有价值</b>。下一步不是「把三个信号加权投票」那种凑法：<b>离题的能拒，话题内缺失的只能降档提示</b>（给出最接近的原文 + 一句「可能没直接回答你」），阈值留给交叉验证，最后再拿一份别人写的新题测一次。<b>冻结集已经给了答案：离题拒得掉（0/15 硬答），话题内缺失拒不掉（11/15 硬答）</b></div></li>
+          <li><div class="nd"><b>三档判定（2026-11-14 上线）</b>：问句实词只命中 1 个 → 降成「低置信：给最接近原文 + 说清没直接写」，命中 0 个才拒答。开发集难负例的硬答从 11/11 降到 1/11；但拿同一批冻结题回归，话题内缺失仍有 <b>11/15</b> 落在高置信档——这些题的关键词手册里都有，只是那件事没写，词面信号分不开。</div></li>
+<li><div class="nd"><span class="bad">结论</span>单靠一个分数阈值判「有没有依据」，在这份手册上<b>不成立</b>——要么全放行、要么误拒一半。<b>这条负面结果比一个漂亮阈值更有价值</b>。下一步不是「把三个信号加权投票」那种凑法：<b>离题的能拒，话题内缺失的只能降档提示</b>（给出最接近的原文 + 一句「可能没直接回答你」），阈值留给交叉验证，最后再拿一份别人写的新题测一次。<b>冻结集已经给了答案：离题拒得掉（0/15 硬答），话题内缺失拒不掉（11/15 硬答）</b></div></li>
         </ul>
       </li>
 
@@ -338,7 +340,7 @@ li.collapsed > ul.kids{display:none}
       <li class="collapsed">
         <div class="nd lv1 has-kids"><span class="no">06</span><b>三处真缺陷</b><span class="val">都有证据</span><i class="chev"></i></div>
         <ul class="kids">
-          <li><div class="nd"><span class="bad">#1</span>切分按字符硬切，不看标点；<code>chunk-004</code> 的章节名字段变成了「。」</div></li>
+          <li><div class="nd"><span class="bad">#1 已修</span>原来按字符硬切、不看标点（<code>chunk-004</code> 的章节名变成「。」）；2026-11-14 改成「先分条、再分句」，切点只落在条与句之间，评测 15 题仍全 1.00</div></li>
           <li><div class="nd"><span class="bad">#2</span>门槛 0.02 几乎什么都放行（34 个负例放走 <b>29</b> 个）；绝对分数调到最优 <span class="mono">0.18</span> 仍漏 1 个；换成分差（top1−top2 ≥ 0.13）在训练样本上能全分开，<b>但留出测试里误拒了一半正例</b>——所以这条缺陷到 2026-11-14 还没修好</div></li>
           <li><div class="nd"><span class="bad">#3</span>评测集全正例 + 忠实度无区分度，导致前两个缺陷测不出来</div></li>
           <li><div class="nd"><b>三者串起来</b>：切坏 → 门槛虚设 → 评测还测不出 = 系统会一本正经答错，且没人报警</div></li>
@@ -379,7 +381,7 @@ li.collapsed > ul.kids{display:none}
       <li class="collapsed">
         <div class="nd lv1 has-kids"><span class="no">09</span><b>面试会被追问什么</b><span class="val">记关键词，别背原句</span><i class="chev"></i></div>
         <ul class="kids">
-          <li><div class="nd"><b>为什么按字数切？</b>省事，代价是断句；该按标点/条款切，再用评测标定</div></li>
+          <li><div class="nd"><b>为什么一开始按字数切？</b>省事，代价是断句（分块从半句话开始）；现在改成「条 → 句」两级切，280 只当上限，靠评测兜住不能退步</div></li>
           <li><div class="nd"><b>为什么不用向量模型？</b>不是「跑不动」——小型中文 embedding（如 bge-small）在 CPU 上也能离线跑；选 TF-IDF 是因为<b>先要一条人人能看懂、能逐词核对的基线</b>。代价是只认字面（退学≠终止学籍），下一步做 TF-IDF vs 向量 的对照实验再决定</div></li>
           <li><div class="nd"><b>余弦和欧氏区别？</b>余弦只看方向，不受文本长短影响</div></li>
           <li><div class="nd"><b>top_k 怎么定？</b>折中；正经做法是画召回率/上下文长度曲线找拐点</div></li>
@@ -398,7 +400,7 @@ li.collapsed > ul.kids{display:none}
         <ul class="kids">
           <li><div class="nd"><b>30 秒稿（约 120 字，背下来的是这个）</b>：「这是个校园手册问答项目。它把手册切成带重叠的小卡片，用 TF-IDF 给词打分；提问时找出最像的 4 张，分数太低就说依据不足，够了就从原文挑句子并标出处。原型是 AI 给的，我没直接用，而是读懂后自己验证——发现自带评测全是正例，测不出拒答失效。」</div></li>
           <li><div class="nd"><b>被追问再展开</b>（下面 1–5 是展开顺序，不是要背的稿）</div></li>
-          <li><div class="nd">1. 文档进来先切分，每块约 280 字、留 60 字重叠，避免断句</div></li>
+          <li><div class="nd">1. 文档进来先按「条」切、条内按句切，每块不超过 280 字，重叠取整句</div></li>
           <li><div class="nd">2. 每块用 TF-IDF 建索引，算的是「这词在本块多、在别块少」</div></li>
           <li><div class="nd">3. 用户提问同法转权重，余弦相似度取最像的 4 块</div></li>
           <li><div class="nd">4. 先判最高分够不够，不够就拒答，不硬凑</div></li>
