@@ -316,6 +316,10 @@ li.collapsed > ul.kids{display:none}
           <li><div class="nd"><b>信号体检</b>（<span class="mono">signal_auc.py</span>）：先不选方案，逐个信号算 AUC——随机取一个正例和一个负例，正例分数更高的概率，0.5 等于瞎猜</div></li>
           <li><div class="nd">对<b>离题</b>负例：分差 <span class="mono">0.917</span>、top1 <span class="mono">0.887</span>、命中词数 <span class="mono">0.881</span> → 离题问题能分</div></li>
           <li><div class="nd">对<b>话题内缺失</b>的难负例（校医院周末开不开门）：全掉下来——命中词数 <span class="mono">0.875</span>、覆盖率 <span class="mono">0.826</span>、IDF 覆盖率 <span class="mono">0.795</span>、top1 <span class="mono">0.739</span>、分差 <span class="mono">0.723</span>，置信区间都很宽（<span class="mono">±0.2</span>）</div></li>
+          <li><div class="nd"><b>两份独立实现互相对照</b>（外部评审另写一版 <span class="mono">signal_auc_claude.py</span>，信号定义与自助区间各自实现）：结论和排序一致，数字略高</div></li>
+          <li><div class="nd">对<b>离题</b>负例：覆盖率 <span class="mono">0.95</span>、分差 <span class="mono">0.94</span>、top1 <span class="mono">0.91</span>、命中词数 <span class="mono">0.88</span></div></li>
+          <li><div class="nd">对<b>话题内缺失</b>：命中词数 <span class="mono">0.87</span>、覆盖率 <span class="mono">0.85</span>、top1 <span class="mono">0.77</span>、分差 <span class="mono">0.76</span>——全线比离题低 0.1 左右</div></li>
+          <li><div class="nd"><b>过拟合陷阱的教科书样本</b>：同一批信号，拿<b>训练正例</b>对离题负例算，分差 AUC = <span class="mono">1.00</span>；换成留出正例，掉到 <span class="mono">0.94</span>；再换到话题内缺失负例，只剩 <span class="mono">0.76</span>。<b>同一套代码，三个数字 = 0.76 / 0.94 / 1.00，取决于你拿谁去算。</b></div></li>
           <li><div class="nd">所以「分差」在这批难负例上只有 <span class="mono">0.723</span>——训练集上的干净是假象。词面信号分不开「同义词」和「真没写」，这不是调参能解决的</div></li>
           <li><div class="nd"><span class="bad">结论</span>单靠一个分数阈值判「有没有依据」，在这份手册上<b>不成立</b>——要么全放行、要么误拒一半。<b>这条负面结果比一个漂亮阈值更有价值</b>。下一步不是「把三个信号加权投票」那种凑法：<b>离题的能拒，话题内缺失的只能降档提示</b>（给出最接近的原文 + 一句「可能没直接回答你」），阈值留给交叉验证，最后再拿一份别人写的新题测一次</div></li>
         </ul>

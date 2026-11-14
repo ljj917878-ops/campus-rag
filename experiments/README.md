@@ -63,3 +63,26 @@ cd C:\Users\傻福\Desktop\CampusRAG-Eval\campus-rag
 - 正例只有 15 条、负例 20 条，样本很小，任何「最优阈值」都只是初步估计
 - 忠实度指标（`evaluation.py:174`）对抽取式答案恒为 1.00，没有区分度
 - 负例是本文件里手写的，覆盖面有限；真要严谨得多来源采样
+
+## signal_auc.py / signal_auc_claude.py
+
+两份独立实现的「信号体检」：对每个问题算 top1、分差、IDF 加权覆盖率、命中实词数，再用 AUC 看每个信号能不能分开正例和负例。不选阈值，所以不会因为凑阈值虚高。
+
+```powershell
+# 自带脚本（正例 12 / 难负例 11 / 离题 20）
+.\.venv\Scripts\python.exe experiments\signal_auc.py
+
+# 外部评审版（判定只用检索正确的正例；离题清单单独传）
+cd experiments; $env:PYTHONPATH=".."; ..\.venv\Scripts\python.exe signal_auc_claude.py --easy-neg easy_negatives.txt
+```
+
+2026-11-14 结果（两版一致，差值在实现细节）：
+
+| 信号 | 对难负例（话题内缺失） | 对离题负例 |
+| --- | --- | --- |
+| 命中实词数 | 0.87 | 0.88 |
+| 覆盖率 | 0.85 | 0.95 |
+| top1 | 0.77 | 0.91 |
+| 分差 | 0.76 | 0.94 |
+
+同一套代码，训练正例对离题负例的分差 AUC = 1.00。**0.76 / 0.94 / 1.00 取决于拿谁去算**——这就是过拟合陷阱。
