@@ -751,7 +751,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
   const mind = document.querySelector('.mind');
   if (!mind) return;
       // —— 展开/收起：高度动画 + 淡入，不再瞬间弹出 ——
-  const EASE = 'cubic-bezier(.22,.8,.24,1)';
+  const EASE = 'cubic-bezier(.32,.08,.24,1)';
   const childrenOf = (li) => li.querySelector(':scope > ul.kids');
 
   function openLi(li) {
@@ -762,7 +762,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
     ul.style.overflow = 'hidden';
     const a = ul.animate(
       [{ height: '0px', opacity: 0 }, { height: h + 'px', opacity: 1 }],
-      { duration: 300, easing: EASE }
+      { duration: 340, easing: EASE }
     );
     a.onfinish = () => { ul.style.overflow = ''; };
   }
@@ -777,7 +777,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
     ul.style.overflow = 'hidden';
     const a = ul.animate(
       [{ height: h + 'px', opacity: 1 }, { height: '0px', opacity: 0 }],
-      { duration: 220, easing: EASE }
+      { duration: 240, easing: EASE }
     );
     a.onfinish = () => { ul.style.overflow = ''; li.classList.add('collapsed'); };
   }
