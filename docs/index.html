@@ -390,7 +390,7 @@ li.collapsed > ul.kids{display:none}
   });
   const btns = document.querySelectorAll('.mind-top .mini');
   const setActive = (el) => btns.forEach(b => b.classList.toggle('on', b === el));
-  const topLevel = () => mind.querySelectorAll('ul.kids > li');
+  const topLevel = () => mind.querySelectorAll(':scope > ul.kids > li');
   const showOnly = (n) => {
     topLevel().forEach(li => li.classList.add('collapsed'));
     topLevel().forEach((li, i) => { if (i < n) li.classList.remove('collapsed'); });
