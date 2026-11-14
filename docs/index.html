@@ -1,0 +1,407 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CampusRAG · 一张图看全</title>
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  /* ── 顶部数字条 ───────────────────────── */
+  .flowbar{display:flex;align-items:stretch;gap:0;background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);margin:18px 0 6px}
+  .flowbar .cell{flex:1 1 0;padding:13px 10px;text-align:center;border-right:1px solid var(--line-2);position:relative}
+  .flowbar .cell:last-child{border-right:0}
+  .flowbar .k{display:block;font-size:11.5px;color:var(--dim-2);letter-spacing:.04em;margin-bottom:2px}
+  .flowbar .v{font-family:var(--mono);font-size:17px;color:var(--green);font-weight:600;line-height:1.2}
+  .flowbar .cell::after{content:"›";position:absolute;right:-6px;top:50%;transform:translateY(-50%);color:#3d4c5b;font-size:15px;z-index:1}
+  .flowbar .cell:last-child::after{content:""}
+
+  /* ── 主干节点条 ───────────────────────── */
+  .rail{display:flex;gap:0;flex-wrap:nowrap;overflow-x:auto;padding:16px 2px 6px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+  .rail::-webkit-scrollbar{height:6px}
+  .rail::-webkit-scrollbar-thumb{background:#dcdcd2;border-radius:3px}
+  .node{
+    flex:0 0 auto;appearance:none;cursor:pointer;font-family:inherit;
+    background:var(--card);border:1.5px solid var(--line);border-radius:12px;
+    padding:9px 11px 8px;min-width:106px;text-align:left;transition:.15s;position:relative;
+    display:flex;flex-direction:column;gap:1px;
+  }
+  .node:hover{border-color:var(--green-line);transform:translateY(-1px)}
+  .node .n{font-family:var(--mono);font-size:11.5px;color:var(--dim-2)}
+  .node .t{font-size:14.5px;font-weight:600;color:var(--ink);white-space:nowrap}
+  .node .s{font-size:11.5px;color:var(--dim);font-family:var(--mono);white-space:nowrap}
+  .node[aria-selected="true"]{border-color:var(--green);background:var(--green);box-shadow:0 6px 16px -10px rgba(29,92,63,.9)}
+  .node[aria-selected="true"] .t{color:#fff}
+  .node[aria-selected="true"] .n,.node[aria-selected="true"] .s{color:#c8e3d2}
+  .conn{flex:0 0 20px;display:flex;align-items:center;justify-content:center;color:#3d4c5b;font-size:15px}
+
+  /* ── 详情面板 ─────────────────────────── */
+  .detail{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;box-shadow:var(--shadow);margin-top:12px}
+  .detail .head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+  .detail .badge{font-family:var(--mono);font-size:12px;background:var(--green-soft);color:var(--green);border:1px solid var(--green-line);border-radius:6px;padding:2px 8px}
+  .detail h3{font-size:19px;margin:0}
+  .detail .oneline{color:var(--dim);font-size:15px;margin:4px 0 14px}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .kv{background:var(--bg-2);border:1px solid var(--line-2);border-radius:10px;padding:11px 13px}
+  .kv .k{font-size:11.5px;color:var(--dim-2);letter-spacing:.05em;display:block;margin-bottom:3px}
+  .kv .v{font-size:14.5px;color:var(--ink-2)}
+  .kv .v.code{font-family:var(--mono);font-size:13px;color:var(--green)}
+  .detail .why{margin-top:12px}
+
+  /* ── 旅程对照 ─────────────────────────── */
+  .two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:14px 0}
+  .journey{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow)}
+  .journey.bad{border-color:var(--amber-line);background:linear-gradient(180deg,#1d1611,#161d25)}
+  .journey h4{margin:0 0 4px;font-size:15px}
+  .journey .q{font-size:14.5px;color:var(--dim);margin:0 0 12px;font-family:var(--mono)}
+  .track2{display:flex;flex-direction:column;gap:0}
+  .track2 .t{display:flex;gap:9px;align-items:flex-start;font-size:14px;color:var(--ink-2);padding:5px 0}
+  .track2 .t i{flex:0 0 18px;height:18px;border-radius:50%;background:var(--green-soft);color:var(--green);font-size:11px;font-style:normal;display:flex;align-items:center;justify-content:center;margin-top:2px}
+  .journey.bad .track2 .t i{background:rgba(242,160,106,.16);color:var(--amber)}
+  .track2 .t b{color:var(--ink)}
+  .res{margin-top:10px;padding:9px 12px;border-radius:9px;font-size:14px;background:var(--green-soft);color:var(--green);font-family:var(--mono)}
+  .journey.bad .res{background:rgba(242,160,106,.14);color:var(--amber)}
+
+  /* ── 文件接力 ─────────────────────────── */
+  .files{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+  .file{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 14px;position:relative}
+  .file .fn2{font-family:var(--mono);font-size:13px;color:var(--green);font-weight:600;display:block;margin-bottom:4px}
+  .file .d{font-size:13.5px;color:var(--dim);line-height:1.6}
+  .file .ln{position:absolute;top:11px;right:12px;font-family:var(--mono);font-size:11px;color:var(--dim-2)}
+
+  /* ── 取舍三卡 ─────────────────────────── */
+  .picks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+  .pick{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+  .pick h4{margin:0 0 6px;font-size:15px}
+  .pick .a{color:var(--green);font-size:13.5px;margin-bottom:6px}
+  .pick .b{color:var(--amber);font-size:13.5px}
+  .pick p{margin:0;font-size:13.8px;color:var(--dim);line-height:1.6}
+
+  @media (max-width:760px){
+    .flowbar{flex-wrap:wrap}
+    .flowbar .cell{flex:1 1 33.333%;border-bottom:1px solid var(--line-2);padding:10px 6px}
+    .flowbar .cell::after{content:""}
+    .flowbar .v{font-size:15px}
+    .grid,.two,.picks{grid-template-columns:1fr}
+    .files{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .detail{padding:16px 15px}
+    .node{min-width:112px;padding:9px 11px 8px}
+    .node .t{font-size:13.5px}
+  }
+/* ── 思维地图 ───────────────────────────────── */
+.mind{--spine:#3d5064;position:relative;margin:22px 0 8px}
+.mind-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:16px 0 4px}
+.mini{cursor:pointer;font-family:inherit;font-size:13px;color:var(--dim);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 13px;transition:.15s}
+.mini:hover{color:var(--green);border-color:var(--green-line);background:var(--green-soft)}
+.mini.on{color:#0a1a12;background:var(--green);border-color:var(--green)}
+.mini-hint{font-size:12.5px;color:var(--dim-2);margin-left:4px}
+
+.mroot{
+  display:inline-flex;flex-direction:column;gap:3px;
+  background:linear-gradient(180deg,#1a2733,#151d25);
+  border:1.5px solid var(--green-line);border-radius:14px;
+  padding:13px 18px;box-shadow:0 0 0 4px rgba(61,220,151,.05);
+}
+.mroot b{font-size:17px}
+.mroot span{font-size:13px;color:var(--dim)}
+.mroot em{font-style:normal;color:var(--green);font-family:var(--mono);font-size:12.5px}
+
+ul.kids{list-style:none;margin:0;padding:0}
+ul.kids > li{position:relative;padding-left:34px}
+ul.kids > li::before{content:"";position:absolute;left:15px;top:0;bottom:0;border-left:1px solid var(--spine)}
+ul.kids > li:last-child::before{bottom:auto;height:26px}
+ul.kids > li::after{content:"";position:absolute;left:15px;top:25px;width:19px;border-top:1px solid var(--spine)}
+ul.kids > li:first-child::before{top:25px}
+
+.nd{
+  display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+  background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:8px 12px;margin:4px 0;font-size:14.8px;color:var(--ink-2);
+  cursor:default;transition:.12s;
+}
+.nd b{color:var(--ink);font-weight:600}
+.nd code{font-size:12.5px;color:var(--green);background:rgba(61,220,151,.08);border:1px solid rgba(61,220,151,.16);padding:1px 6px;border-radius:5px}
+.nd .num{margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--green);white-space:nowrap}
+.nd.lv1{
+  background:linear-gradient(180deg,#18222c,#161d25);border-color:#2e4550;
+  border-left:3px solid var(--green-line);
+  font-size:15.6px;font-weight:600;color:var(--ink);
+  cursor:pointer;padding:10px 14px;margin:7px 0 2px;
+}
+.nd.lv1:hover{border-color:var(--green-line);background:linear-gradient(180deg,#1a2833,#17202a)}
+.nd.lv1 .no{font-family:var(--mono);font-size:12px;color:#0a1a12;background:var(--green);border-radius:6px;padding:1px 7px;font-weight:700}
+.nd.lv1 .val{font-family:var(--mono);font-size:12.5px;color:var(--dim);margin-left:auto;white-space:nowrap}
+.chev{width:8px;height:8px;border-right:2px solid var(--dim-2);border-bottom:2px solid var(--dim-2);transform:rotate(45deg);margin-left:10px;transition:.18s;flex:0 0 auto}
+li.collapsed > .nd.lv1 .chev{transform:rotate(-45deg)}
+li.collapsed > ul.kids{display:none}
+.bad{font-size:12px;color:var(--amber);background:rgba(242,160,106,.12);border:1px solid var(--amber-line);border-radius:999px;padding:1px 8px;white-space:nowrap}
+.dp{margin:4px 0}
+.dp > summary{list-style:none;cursor:pointer;font-size:14px;color:var(--ink-2);background:var(--bg-2);border:1px dashed #33414f;border-radius:10px;padding:8px 12px}
+.dp > summary::-webkit-details-marker{display:none}
+.dp > summary::before{content:"▸ ";color:var(--green);font-weight:700}
+.dp[open] > summary::before{content:"▾ "}
+.dp > summary:hover{border-color:var(--green-line);color:var(--ink)}
+.dp .dpbody{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:8px;font-size:14.6px;max-width:640px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0 0;font-size:13px;color:var(--dim-2)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;background:var(--green);margin-right:6px}
+.legend i.amber{background:var(--amber)}
+
+/* 宽屏：真正的横向思维导图（根在左，逐层向右分支） */
+@media (min-width:900px){
+  .mind{display:flex;align-items:center}
+  .mind > .mroot{flex:0 0 auto;margin-right:36px;position:relative}
+  .mind > ul.kids{position:relative}
+  .mind > ul.kids::before{content:"";position:absolute;left:-36px;top:50%;width:36px;border-top:1px solid var(--spine)}
+  .mind ul.kids{display:flex;flex-direction:column;justify-content:center;flex:0 0 auto}
+  .mind ul.kids > li{display:flex;align-items:center;padding:3px 0 3px 36px}
+  .mind ul.kids > li::before{left:16px;top:0;bottom:0;height:auto;border-left:1px solid var(--spine)}
+  .mind ul.kids > li:first-child::before{top:50%}
+  .mind ul.kids > li:last-child::before{bottom:50%;height:auto}
+  .mind ul.kids > li:only-child::before{display:none}
+  .mind ul.kids > li::after{left:16px;top:50%;width:20px;border-top:1px solid var(--spine)}
+  .mind ul.kids > li:only-child::after{width:20px}
+  .mind .nd{margin:3px 0;flex:0 0 auto;width:440px;max-width:440px}
+  .mind > .mroot::after{content:"";position:absolute;right:-36px;top:50%;width:36px;border-top:1px solid var(--spine);display:none}
+  .mind .dp{flex:0 0 auto}
+  .mind .dp{width:440px}
+  .mind .dp .dpbody{width:440px;max-width:440px}
+  .mind .nd.lv1{margin:3px 0;min-width:172px}
+  .mind .mroot > span{max-width:210px}
+  .mind .dp .dpbody{max-width:560px}
+}
+
+@media (max-width:899px){
+  .mind{display:block}
+  .mind .dp .dpbody{max-width:none}
+}
+@media (max-width:620px){
+  ul.kids > li{padding-left:20px}
+  ul.kids > li::before{left:8px}
+  ul.kids > li::after{left:8px;width:12px;top:20px}
+  ul.kids > li:last-child::before{height:21px}
+  ul.kids > li:first-child::before{top:20px}
+  .nd{font-size:14px;padding:7px 10px}
+  .nd.lv1{font-size:14.6px;padding:9px 11px}
+  .nd .num,.nd.lv1 .val{display:none}
+}
+</style>
+
+  <link rel="prefetch" href="code.html">
+<link rel="prefetch" href="all.html">
+</head>
+<body>
+<div class="site-head"><div class="bar">
+  <a class="brand" href="index.html"><i></i>CampusRAG 一页看懂<small>全部内容都在这一张图里</small></a>
+  <nav class="site-nav">
+    <a href="index.html" class="on">一张图看全</a>
+    <a href="code.html">代码详解</a>
+  </nav>
+</div></div>
+
+<div class="wrap">
+  <div class="kicker">CampusRAG · 全部内容 · 一棵树</div>
+  <h1>一张图看全：这个校园手册问答项目</h1>
+  <p class="sub">十根主干都在这里，点方块展开。左边是根，往上长的是事实，往下长的是细节。</p>
+
+  <div class="legend">
+    <span><i></i>带数字的 = 真跑出来的结果</span>
+    <span><i></i>灰虚线框 = 能再点开看数据</span>
+    <span><i class="amber"></i>琥珀色 = 已知缺陷</span>
+  </div>
+
+  <div class="mind-top">
+    <button class="mini" data-act="expand">全部展开</button>
+    <button class="mini on" data-act="collapse">只看十根主干</button>
+    <span class="mini-hint">10 根主干 · 60+ 细节 · 代码位置都能对照</span>
+  </div>
+
+  <div class="mind">
+    <div class="mroot">
+      <b>CampusRAG</b>
+      <span>校园规章问答 · <em>2673 字</em>手册 · <em>15 张</em>卡片 · <em>15 题</em>评测</span>
+    </div>
+
+    <ul class="kids">
+
+      <!-- ① 是什么 -->
+      <li class="collapsed">
+        <div class="nd lv1 has-kids"><span class="no">01</span><b>这是什么</b><span class="val">一句话</span><i class="chev"></i></div>
+        <ul class="kids">
+          <li><div class="nd">你问一句，它去手册里翻出最相关的几段，<b>把原话挑出来</b>回答，并告诉你出处</div></li>
+          <li><div class="nd">翻不到就老实说「依据不足」，<b>不编</b></div></li>
+          <li><div class="nd">比喻：<b>开卷考试</b>——只能抄手册原话、每题标出处、找不到就写「手册里没有」</div></li>
+          <li><div class="nd">它<b>不做</b>的事：不训练模型、不联网（默认）、没 API Key 也能跑</div></li>
+          <li><div class="nd">顺序不能换：<b>先检索 → 再判够不够 → 最后才作答</b></div></li>
+        </ul>
+      </li>
+
+      <!-- ② 七步 -->
+      <li class="collapsed">
+        <div class="nd lv1 has-kids"><span class="no">02</span><b>它怎么跑：七步</b><span class="val">启动跑 3 步 · 每次提问跑 4 步</span><i class="chev"></i></div>
+        <ul class="kids">
+          <li><div class="nd"><b>01 读入</b>：按空行切 12 段，记每段起始位置 <code>rag_engine.py:109</code></div></li>
+          <li><div class="nd"><b>02 切分</b>：280 字一张、相邻重叠 60 → 15 张 <code>:98</code> <span class="bad">缺陷 #1</span></div></li>
+          <li><div class="nd"><b>03 索引</b>：jieba 分词 → 15 × 1857 权重矩阵，启动时建一次 <code>:237</code></div></li>
+          <li><div class="nd"><b>04 检索</b>：问题同法转权重，余弦比方向，取 top-4 <code>:248</code></div></li>
+          <li><div class="nd"><b>05 判定</b>：最高分 &lt; 0.02 就回 no_evidence，不调模型 <code>:274/:306</code> <span class="bad">缺陷 #2</span></div></li>
+          <li><div class="nd"><b>06 组装</b>：挑最像的 4 句原话，抄不改写 <code>:403</code></div></li>
+          <li><div class="nd"><b>07 作答</b>：答案 + （依据：卡片编号），引用去重 <code>app.py:54</code></div></li>
+        </ul>
+      </li>
+
+      <!-- ③ 四个数字 -->
+      <li class="collapsed">
+        <div class="nd lv1 has-kids"><span class="no">03</span><b>四个数字怎么定的</b><span class="val">280 / 60 / 4 / 0.02</span><i class="chev"></i></div>
+        <ul class="kids">
+          <li><div class="nd"><b>280</b> 拍定的默认值，无标定；12 段里只有 3 段超过它，9 段整段通过</div></li>
+          <li><div class="nd"><b>60</b> 取 280 的 21%，防断句；代价是重复 157 字（15 块共 2830 字）</div></li>
+          <li><div class="nd"><b>4</b> 折中：取 1 怕漏、取 15 等于没检索；4 块 ≈ 1100 字</div></li>
+          <li><div class="nd"><b>0.02</b> 没标定过，<b>是错的</b>：负例 0.0879 也能过闸</div></li>
+          <li>
+            <details class="dp"><summary>实测：把 280 改成 120 / 180 / 420 会怎样</summary>
+              <div class="dpbody">
+                <p>同一套 15 题，只改 chunk_size：</p>
+                <div class="tbl-wrap"><table class="tbl" style="font-size:14px">
+                  <tr><th>chunk_size</th><th>块数</th><th>正例 top1</th><th>负例 top1（火锅店）</th><th>关键词进 top4</th></tr>
+                  <tr><td class="mono">120</td><td class="mono">29</td><td class="mono">0.376</td><td class="mono">0.1245</td><td class="mono">15 / 15</td></tr>
+                  <tr><td class="mono">180</td><td class="mono">20</td><td class="mono">0.318</td><td class="mono">0.1649</td><td class="mono">15 / 15</td></tr>
+                  <tr><td class="mono">280</td><td class="mono">15</td><td class="mono">0.284</td><td class="mono">0.0879</td><td class="mono">15 / 15</td></tr>
+                  <tr><td class="mono">420</td><td class="mono">12</td><td class="mono">0.267</td><td class="mono">0.0857</td><td class="mono">15 / 15</td></tr>
+                </table></div>
+                <div class="note">召回全都不受影响；块越小正负例分数一起涨（噪声更危险）；420 等于不切。<b>该修的是切法，不是数字。</b></div>
+              </div>
+            </details>
+          </li>
+        </ul>
+      </li>
+
+      <!-- ④ 一次真实问答 -->
+      <li class="collapsed">
+        <div class="nd lv1 has-kids"><span class="no">04</span><b>一次真实问答</b><span class="val">两个对照</span><i class="chev"></i></div>
+        <ul class="kids">
+          <li><div class="nd"><b>问得清楚</b>：「寒暑假想留校住宿要提前多久申请」→ top1 <span class="mono">0.398</span> → 过闸 → 抽 4 句 → 引用第八章</div></li>
+          <li><div class="nd"><b>手册里没有</b>：「学校火锅店几点关门」→ top1 <span class="mono">0.0879</span> → <b>照样过闸</b> → 硬答 <span class="bad">缺陷 #2</span></div></li>
+          <li><div class="nd">为什么火锅能得 0.0879：6 个词里只有「学校」在词表，三张卡片都含它</div></li>
+          <li><div class="nd">正例最低 0.254、噪声 0.02~0.079、负例 0.0879 → <b>交界约 0.15</b></div></li>
+        </ul>
+      </li>
+
+      <!-- ⑤ 评测 -->
+      <li class="collapsed">
+        <div class="nd lv1 has-kids"><span class="no">05</span><b>怎么判断它好坏</b><span class="val">15 题 · 4 指标</span><i class="chev"></i></div>
+        <ul class="kids">
+          <li><div class="nd">四个指标门槛：关键词 <span class="mono">0.60</span> / 忠实度 <span class="mono">0.70</span> / 检索 <span class="mono">0.70</span> / 综合 <span class="mono">0.65</span> <code>evaluation.py:17-21</code></div></li>
+          <li><div class="nd">综合 = 0.4×关键词 + 0.35×忠实度 + 0.25×检索 <code>:255</code></div></li>
+          <li><div class="nd">实测结果：15 题<b>全 1.00</b>，门禁通过——但这是「满分」不是「完美」</div></li>
+          <li><div class="nd"><span class="bad">缺陷 #3</span>15 题<b>全是正样本</b>，没有一道「手册里没有」的题，所以测不出拒答失效</div></li>
+          <li><div class="nd">忠实度算法：每句任取 <b>8 字滑窗</b>命中上下文即算有依据 → 抽取式答案<b>必然 1.00</b>，指标无区分度</div></li>
+        </ul>
+      </li>
+
+      <!-- ⑥ 三处缺陷 -->
+      <li class="collapsed">
+        <div class="nd lv1 has-kids"><span class="no">06</span><b>三处真缺陷</b><span class="val">都有证据</span><i class="chev"></i></div>
+        <ul class="kids">
+          <li><div class="nd"><span class="bad">#1</span>切分按字符硬切，不看标点；<code>chunk-004</code> 的章节名字段变成了「。」</div></li>
+          <li><div class="nd"><span class="bad">#2</span>门槛 0.02 卡在噪声区，负例 0.0879 通过；该定到 <b>0.15</b> 附近</div></li>
+          <li><div class="nd"><span class="bad">#3</span>评测集全正例 + 忠实度无区分度，导致前两个缺陷测不出来</div></li>
+          <li><div class="nd"><b>三者串起来</b>：切坏 → 门槛虚设 → 评测还测不出 = 系统会一本正经答错，且没人报警</div></li>
+          <li><div class="nd">怎么交代：「我建了 15 题回归集，反而发现门禁本身测不出拒答失效——这是我下一步要补的」</div></li>
+        </ul>
+      </li>
+
+      <!-- ⑦ 术语 -->
+      <li class="collapsed">
+        <div class="nd lv1 has-kids"><span class="no">07</span><b>十个词</b><span class="val">整站只解释一次</span><i class="chev"></i></div>
+        <ul class="kids">
+          <li><div class="nd"><b>RAG</b> 先翻资料再回答，不是凭记忆瞎答</div></li>
+          <li><div class="nd"><b>chunk 切段</b> 把长文档切成小卡片，本项目 15 张</div></li>
+          <li><div class="nd"><b>TF-IDF</b> 在这张卡片里多、在别处少 → 权重高</div></li>
+          <li><div class="nd"><b>分词</b> 中文没空格，得先切成词（jieba）</div></li>
+          <li><div class="nd"><b>余弦相似度</b> 比两串权重的方向，不比长短</div></li>
+          <li><div class="nd"><b>top_k</b> 最多取几张卡片，默认 4</div></li>
+          <li><div class="nd"><b>min_score</b> 及格线，低于就判没依据，默认 0.02</div></li>
+          <li><div class="nd"><b>抽取式</b> 抄原文句子拼答案</div></li>
+          <li><div class="nd"><b>生成式</b> 交给大模型改写；没 Key 自动退回抽取式</div></li>
+          <li><div class="nd"><b>引用 citation</b> 答案末尾标「依据：campus_handbook-007」</div></li>
+        </ul>
+      </li>
+
+      <!-- ⑧ 文件 -->
+      <li class="collapsed">
+        <div class="nd lv1 has-kids"><span class="no">08</span><b>四个文件</b><span class="val">谁调谁</span><i class="chev"></i></div>
+        <ul class="kids">
+          <li><div class="nd"><b>app.py</b> 285 行 · 界面、按钮、答题区，只负责「展示」和「把点击转成调用」</div></li>
+          <li><div class="nd"><b>rag_engine.py</b> 403 行 · 核心：切分→建索引→检索→判定→拼答案，七个环节六个在这</div></li>
+          <li><div class="nd"><b>generator.py</b> 142 行 · 可选：有 Key 才走大模型改写，失败回退抄原句</div></li>
+          <li><div class="nd"><b>evaluation.py</b> 332 行 · 15 道题打分，够不够线决定「能不能合进去」</div></li>
+          <li><div class="nd">调用关系：<span class="mono">app.py → rag_engine.py →（可选）generator.py</span>；evaluation.py 独立跑，把 rag_engine 当被测对象</div></li>
+        </ul>
+      </li>
+
+      <!-- ⑨ 面试问答 -->
+      <li class="collapsed">
+        <div class="nd lv1 has-kids"><span class="no">09</span><b>面试会被追问什么</b><span class="val">照着念</span><i class="chev"></i></div>
+        <ul class="kids">
+          <li><div class="nd"><b>为什么按字数切？</b>省事，代价是断句；该按标点/条款切，再用评测标定</div></li>
+          <li><div class="nd"><b>为什么不用向量模型？</b>离线、无 GPU、规模小；代价只认字面（退学≠终止学籍）；升级走混合召回</div></li>
+          <li><div class="nd"><b>余弦和欧氏区别？</b>余弦只看方向，不受文本长短影响</div></li>
+          <li><div class="nd"><b>top_k 怎么定？</b>折中；正经做法是画召回率/上下文长度曲线找拐点</div></li>
+          <li><div class="nd"><b>阈值该定多少？</b>0.15；更稳的是按正负分布取分界，或用 top1 与 top2 分差</div></li>
+          <li><div class="nd"><b>评测集可信吗？</b>不可信的两个理由：全正样本、忠实度对抽取式恒 1.00</div></li>
+          <li><div class="nd"><b>为什么抄不生成？</b>可核对；生成式放 generator.py 当可选项</div></li>
+          <li><div class="nd"><b>100 万字先崩哪？</b>索引：内存矩阵 + 每次重建；要换倒排/增量/ANN</div></li>
+          <li><div class="nd"><b>最脆弱一环？</b>判定闸——它坏了不报错，只会自信地答错，而评测集正好测不出</div></li>
+        </ul>
+      </li>
+
+      <!-- ⑩ 30 秒 -->
+      <li class="collapsed">
+        <div class="nd lv1 has-kids"><span class="no">10</span><b>30 秒口述</b><span class="val">面试开场用</span><i class="chev"></i></div>
+        <ul class="kids">
+          <li><div class="nd">1. 文档进来先切分，每块约 280 字、留 60 字重叠，避免断句</div></li>
+          <li><div class="nd">2. 每块用 TF-IDF 建索引，算的是「这词在本块多、在别块少」</div></li>
+          <li><div class="nd">3. 用户提问同法转权重，余弦相似度取最像的 4 块</div></li>
+          <li><div class="nd">4. 先判最高分够不够，不够就拒答，不硬凑</div></li>
+          <li><div class="nd">5. 够了就从原句里挑，拼成答案 + 章节出处</div></li>
+          <li><div class="nd">被深聊就接：<b>「这套的短板我很清楚——评测集全是正样本，所以它测不出拒答失效，这是我下一个要修的」</b></div></li>
+        </ul>
+      </li>
+
+    </ul>
+  </div>
+
+  <div class="note" style="margin-top:26px">
+    这一页现在是主站：全部内容都在树里。<b>只有代码逐行批注</b>还单独一页（树状布局放不下左右对照的代码），顶栏第二个入口就是它。
+    旧的 Surge 站（campusrag-jietu-june.surge.sh）暂时还在，但以后以这里为准。
+  </div>
+</div>
+
+<footer class="site-foot">CampusRAG · 一张图看全 · 数据来自 2026-11-14 真跑 · 仓库 ljj917878-ops/campus-rag</footer>
+
+<script>
+(() => {
+  const mind = document.querySelector('.mind');
+  if (!mind) return;
+  mind.querySelectorAll('.nd.lv1.has-kids').forEach(nd => {
+    nd.addEventListener('click', () => nd.closest('li').classList.toggle('collapsed'));
+  });
+  const btns = document.querySelectorAll('.mind-top .mini');
+  const setActive = (el) => btns.forEach(b => b.classList.toggle('on', b === el));
+  document.querySelector('[data-act="expand"]').addEventListener('click', (e) => {
+    mind.querySelectorAll('li.collapsed').forEach(li => li.classList.remove('collapsed'));
+    setActive(e.currentTarget);
+  });
+  document.querySelector('[data-act="collapse"]').addEventListener('click', (e) => {
+    mind.querySelectorAll('ul.kids > li').forEach(li => li.classList.add('collapsed'));
+    setActive(e.currentTarget);
+  });
+})();
+</script>
+</body>
+</html>
+
+
+
+
+
+
