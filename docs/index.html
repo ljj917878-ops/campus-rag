@@ -6,8 +6,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CampusRAG · 一张图看全</title>
 <link rel="stylesheet" href="assets/site.css?v=20261114f">
-<link rel="stylesheet" href="assets/fx.css?v=19">
-<link rel="stylesheet" href="assets/vendor/lenis/lenis.css?v=19">
+<link rel="stylesheet" href="assets/fx.css?v=20">
+<link rel="stylesheet" href="assets/vendor/lenis/lenis.css?v=20">
 <style>
   /* ── 顶部数字条 ───────────────────────── */
   .flowbar{display:flex;align-items:stretch;gap:0;background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);margin:18px 0 6px}
@@ -22,19 +22,19 @@
   .rail{display:flex;gap:0;flex-wrap:nowrap;overflow-x:auto;padding:16px 2px 6px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
   .rail::-webkit-scrollbar{height:6px}
   .rail::-webkit-scrollbar-thumb{background:#dcdcd2;border-radius:3px}
-  .node{
+  .rail .node{
     flex:0 0 auto;appearance:none;cursor:pointer;font-family:inherit;
     background:var(--card);border:1.5px solid var(--line);border-radius:12px;
     padding:9px 11px 8px;min-width:106px;text-align:left;transition:.15s;position:relative;
     display:flex;flex-direction:column;gap:1px;
   }
-  .node:hover{border-color:var(--green-line);transform:translateY(-1px)}
-  .node .n{font-family:var(--mono);font-size:11.5px;color:var(--dim-2)}
-  .node .t{font-size:14.5px;font-weight:600;color:var(--ink);white-space:nowrap}
-  .node .s{font-size:11.5px;color:var(--dim);font-family:var(--mono);white-space:nowrap}
-  .node[aria-selected="true"]{border-color:var(--green);background:var(--green);box-shadow:0 6px 16px -10px rgba(29,92,63,.9)}
-  .node[aria-selected="true"] .t{color:#fff}
-  .node[aria-selected="true"] .n,.node[aria-selected="true"] .s{color:#c8e3d2}
+  .rail .node:hover{border-color:var(--green-line);transform:translateY(-1px)}
+  .rail .node .n{font-family:var(--mono);font-size:11.5px;color:var(--dim-2)}
+  .rail .node .t{font-size:14.5px;font-weight:600;color:var(--ink);white-space:nowrap}
+  .rail .node .s{font-size:11.5px;color:var(--dim);font-family:var(--mono);white-space:nowrap}
+  .rail .node[aria-selected="true"]{border-color:var(--green);background:var(--green);box-shadow:0 6px 16px -10px rgba(29,92,63,.9)}
+  .rail .node[aria-selected="true"] .t{color:#fff}
+  .rail .node[aria-selected="true"] .n,.rail .node[aria-selected="true"] .s{color:#c8e3d2}
   .conn{flex:0 0 20px;display:flex;align-items:center;justify-content:center;color:#3d4c5b;font-size:15px}
 
   /* ── 详情面板 ─────────────────────────── */
@@ -87,8 +87,8 @@
     .grid,.two,.picks{grid-template-columns:1fr}
     .files{grid-template-columns:repeat(2,minmax(0,1fr))}
     .detail{padding:16px 15px}
-    .node{min-width:112px;padding:9px 11px 8px}
-    .node .t{font-size:13.5px}
+    .rail .node{min-width:112px;padding:9px 11px 8px}
+    .rail .node .t{font-size:13.5px}
   }
 /* ── 思维地图 ───────────────────────────────── */
 .mind{--spine:#3d5064;position:relative;margin:22px 0 8px}
@@ -927,10 +927,10 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
 })();
 </script>
 
-<script src="assets/vendor/lenis/lenis.min.js?v=19"></script>
-<script src="assets/fx.js?v=19"></script>
-<script src="assets/liquid-glass.js?v=19"></script>
-<script src="assets/mermaid-lazy.js?v=19"></script>
+<script src="assets/vendor/lenis/lenis.min.js?v=20"></script>
+<script src="assets/fx.js?v=20"></script>
+<script src="assets/liquid-glass.js?v=20"></script>
+<script src="assets/mermaid-lazy.js?v=20"></script>
 </body>
 </html>
 
