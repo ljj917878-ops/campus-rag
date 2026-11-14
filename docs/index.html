@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -209,8 +209,9 @@ li.collapsed > ul.kids{display:none}
   </div>
 
   <div class="mind-top">
+    <button class="mini on" data-act="intro">入门：只看前两支</button>
     <button class="mini" data-act="expand">全部展开</button>
-    <button class="mini on" data-act="collapse">只看十根主干</button>
+    <button class="mini" data-act="collapse">只看十根主干</button>
     <span class="mini-hint">10 根主干 · 60+ 细节 · 代码位置都能对照</span>
   </div>
 
@@ -240,9 +241,9 @@ li.collapsed > ul.kids{display:none}
         <ul class="kids">
           <li><div class="nd"><b>01 读入</b>：按空行切 12 段，记每段起始位置 <code>rag_engine.py:109</code></div></li>
           <li><div class="nd"><b>02 切分</b>：280 字一张、相邻重叠 60 → 15 张 <code>:98</code> <span class="bad">缺陷 #1</span></div></li>
-          <li><div class="nd"><b>03 索引</b>：jieba 分词 → 15 × 1857 权重矩阵，启动时建一次 <code>:237</code></div></li>
-          <li><div class="nd"><b>04 检索</b>：问题同法转权重，余弦比方向，取 top-4 <code>:248</code></div></li>
-          <li><div class="nd"><b>05 判定</b>：最高分 &lt; 0.02 就回 no_evidence，不调模型 <code>:274/:306</code> <span class="bad">缺陷 #2</span></div></li>
+          <li><div class="nd"><b>03 索引</b>：先用 jieba 把中文切成词（<span class="mono">宿舍/几点/熄灯</span>），再把 15 张卡片 × 1857 个词的权重算成一张表（这就是 TF-IDF），只在启动时建一次 <code>:237</code></div></li>
+          <li><div class="nd"><b>04 检索</b>：问题也用同一套词表转成权重，再和 15 张卡片逐个比「方向像不像」（余弦相似度：只看朝向，不看句子长短），取最像的 4 张 <code>:248</code></div></li>
+          <li><div class="nd"><b>05 判定</b>：最高分低于门槛（0.02）就直接回 <span class="mono">no_evidence</span>——意思是「判定为没有依据」，此时不调模型、直说不知道 <code>:274/:306</code> <span class="bad">缺陷 #2</span></div></li>
           <li><div class="nd"><b>06 组装</b>：挑最像的 4 句原话，抄不改写 <code>:403</code></div></li>
           <li><div class="nd"><b>07 作答</b>：答案 + （依据：卡片编号），引用去重 <code>app.py:54</code></div></li>
         </ul>
@@ -255,19 +256,19 @@ li.collapsed > ul.kids{display:none}
           <li><div class="nd"><b>280</b> 拍定的默认值，无标定；12 段里只有 3 段超过它，9 段整段通过</div></li>
           <li><div class="nd"><b>60</b> 取 280 的 21%，防断句；代价是重复 157 字（15 块共 2830 字）</div></li>
           <li><div class="nd"><b>4</b> 折中：取 1 怕漏、取 15 等于没检索；4 块 ≈ 1100 字</div></li>
-          <li><div class="nd"><b>0.02</b> 没标定过，<b>是错的</b>：负例 0.0879 也能过闸</div></li>
+          <li><div class="nd"><b>0.02</b> 没标定过，<b>远低于实测交界</b>：20 个负例里 18 个能过闸（最高 0.2014）</div></li>
           <li>
             <details class="dp"><summary>实测：把 280 改成 120 / 180 / 420 会怎样</summary>
               <div class="dpbody">
                 <p>同一套 15 题，只改 chunk_size：</p>
                 <div class="tbl-wrap"><table class="tbl" style="font-size:14px">
-                  <tr><th>chunk_size</th><th>块数</th><th>正例 top1</th><th>负例 top1（火锅店）</th><th>关键词进 top4</th></tr>
-                  <tr><td class="mono">120</td><td class="mono">29</td><td class="mono">0.376</td><td class="mono">0.1245</td><td class="mono">15 / 15</td></tr>
-                  <tr><td class="mono">180</td><td class="mono">20</td><td class="mono">0.318</td><td class="mono">0.1649</td><td class="mono">15 / 15</td></tr>
-                  <tr><td class="mono">280</td><td class="mono">15</td><td class="mono">0.284</td><td class="mono">0.0879</td><td class="mono">15 / 15</td></tr>
-                  <tr><td class="mono">420</td><td class="mono">12</td><td class="mono">0.267</td><td class="mono">0.0857</td><td class="mono">15 / 15</td></tr>
+                  <tr><th>chunk_size</th><th>块数</th><th>正例 top1 均值</th><th>正例最低</th><th>负例 top1</th><th>关键词进 top4</th></tr>
+                  <tr><td class="mono">120</td><td class="mono">38</td><td class="mono">0.379</td><td class="mono">0.237</td><td class="mono">0.1316</td><td class="mono">15 / 15</td></tr>
+                  <tr><td class="mono">180</td><td class="mono">21</td><td class="mono">0.330</td><td class="mono">0.200</td><td class="mono">0.1409</td><td class="mono">15 / 15</td></tr>
+                  <tr><td class="mono">280</td><td class="mono">15</td><td class="mono">0.284</td><td class="mono">0.185</td><td class="mono">0.0879</td><td class="mono">15 / 15</td></tr>
+                  <tr><td class="mono">420</td><td class="mono">12</td><td class="mono">0.267</td><td class="mono">0.172</td><td class="mono">0.0857</td><td class="mono">15 / 15</td></tr>
                 </table></div>
-                <div class="note">召回全都不受影响；块越小正负例分数一起涨（噪声更危险）；420 等于不切。<b>该修的是切法，不是数字。</b></div>
+                <div class="note">召回全都 15/15 没变；块越小，<b>正例和负例的分一起涨</b>（噪声更危险）；420 时 12 段几乎整段通过 = 没切。<b>该修的是切法，不是把数字调来调去。</b><br>复现：<span class="mono">.venv\\Scripts\\python.exe experiments\\chunk_size_sweep.py</span></div>
               </div>
             </details>
           </li>
@@ -281,7 +282,8 @@ li.collapsed > ul.kids{display:none}
           <li><div class="nd"><b>问得清楚</b>：「寒暑假想留校住宿要提前多久申请」→ top1 <span class="mono">0.398</span> → 过闸 → 抽 4 句 → 引用第八章</div></li>
           <li><div class="nd"><b>手册里没有</b>：「学校火锅店几点关门」→ top1 <span class="mono">0.0879</span> → <b>照样过闸</b> → 硬答 <span class="bad">缺陷 #2</span></div></li>
           <li><div class="nd">为什么火锅能得 0.0879：6 个词里只有「学校」在词表，三张卡片都含它</div></li>
-          <li><div class="nd">正例最低 0.254、噪声 0.02~0.079、负例 0.0879 → <b>交界约 0.15</b></div></li>
+          <li><div class="nd">单看分数分不开：20 个负例最高 <span class="mono">0.2014</span>，正例最低 <span class="mono">0.185</span>——<b>区间是重叠的</b></div></li>
+          <li><div class="nd">但看「top1 减 top2 的分差」就分开了：负例最大 <span class="mono">0.1205</span>，正例最小 <span class="mono">0.1353</span></div></li>
         </ul>
       </li>
 
@@ -302,10 +304,10 @@ li.collapsed > ul.kids{display:none}
         <div class="nd lv1 has-kids"><span class="no">06</span><b>三处真缺陷</b><span class="val">都有证据</span><i class="chev"></i></div>
         <ul class="kids">
           <li><div class="nd"><span class="bad">#1</span>切分按字符硬切，不看标点；<code>chunk-004</code> 的章节名字段变成了「。」</div></li>
-          <li><div class="nd"><span class="bad">#2</span>门槛 0.02 卡在噪声区，负例 0.0879 通过；该定到 <b>0.15</b> 附近</div></li>
+          <li><div class="nd"><span class="bad">#2</span>门槛 0.02 几乎什么都放行（20 个负例过 18 个）；而且<b>光调分数调不出来</b>——正负区间重叠，得改成看 top1−top2 的分差</div></li>
           <li><div class="nd"><span class="bad">#3</span>评测集全正例 + 忠实度无区分度，导致前两个缺陷测不出来</div></li>
           <li><div class="nd"><b>三者串起来</b>：切坏 → 门槛虚设 → 评测还测不出 = 系统会一本正经答错，且没人报警</div></li>
-          <li><div class="nd">怎么交代：「我建了 15 题回归集，反而发现门禁本身测不出拒答失效——这是我下一步要补的」</div></li>
+          <li><div class="nd">怎么交代（<b>只说真做过的</b>）：「这套的 15 题是项目自带的，我先把它跑通复现了满分，然后自己加了 20 个手册里没有的问题去打，才发现门禁测不出拒答失效」</div></li>
         </ul>
       </li>
 
@@ -340,13 +342,13 @@ li.collapsed > ul.kids{display:none}
 
       <!-- ⑨ 面试问答 -->
       <li class="collapsed">
-        <div class="nd lv1 has-kids"><span class="no">09</span><b>面试会被追问什么</b><span class="val">照着念</span><i class="chev"></i></div>
+        <div class="nd lv1 has-kids"><span class="no">09</span><b>面试会被追问什么</b><span class="val">记关键词，别背原句</span><i class="chev"></i></div>
         <ul class="kids">
           <li><div class="nd"><b>为什么按字数切？</b>省事，代价是断句；该按标点/条款切，再用评测标定</div></li>
-          <li><div class="nd"><b>为什么不用向量模型？</b>离线、无 GPU、规模小；代价只认字面（退学≠终止学籍）；升级走混合召回</div></li>
+          <li><div class="nd"><b>为什么不用向量模型？</b>不是「跑不动」——小型中文 embedding（如 bge-small）在 CPU 上也能离线跑；选 TF-IDF 是因为<b>先要一条人人能看懂、能逐词核对的基线</b>。代价是只认字面（退学≠终止学籍），下一步做 TF-IDF vs 向量 的对照实验再决定</div></li>
           <li><div class="nd"><b>余弦和欧氏区别？</b>余弦只看方向，不受文本长短影响</div></li>
           <li><div class="nd"><b>top_k 怎么定？</b>折中；正经做法是画召回率/上下文长度曲线找拐点</div></li>
-          <li><div class="nd"><b>阈值该定多少？</b>0.15；更稳的是按正负分布取分界，或用 top1 与 top2 分差</div></li>
+          <li><div class="nd"><b>阈值该定多少？</b>实测 35 条样本：单看分数定不出来（负例最高 0.2014 &gt; 正例最低 0.185）；改成 <b>top1−top2 分差 ≥ 0.13</b> 就能全分开。样本还小，只算初步结论</div></li>
           <li><div class="nd"><b>评测集可信吗？</b>不可信的两个理由：全正样本、忠实度对抽取式恒 1.00</div></li>
           <li><div class="nd"><b>为什么抄不生成？</b>可核对；生成式放 generator.py 当可选项</div></li>
           <li><div class="nd"><b>100 万字先崩哪？</b>索引：内存矩阵 + 每次重建；要换倒排/增量/ANN</div></li>
@@ -363,7 +365,8 @@ li.collapsed > ul.kids{display:none}
           <li><div class="nd">3. 用户提问同法转权重，余弦相似度取最像的 4 块</div></li>
           <li><div class="nd">4. 先判最高分够不够，不够就拒答，不硬凑</div></li>
           <li><div class="nd">5. 够了就从原句里挑，拼成答案 + 章节出处</div></li>
-          <li><div class="nd">被深聊就接：<b>「这套的短板我很清楚——评测集全是正样本，所以它测不出拒答失效，这是我下一个要修的」</b></div></li>
+          <li><div class="nd"><b>这段只记关键词，别背原句</b>：切分 → 建索引 → 检索 → 判门槛 → 抽原文 → 标出处</div></li>
+          <li><div class="nd">被深聊就接：<b>「这套的短板我清楚：自带评测全是正样本，测不出拒答失效；我自己加了 20 个负例才把它逼出来」</b>——前提是你真跑过 <span class="mono">experiments\\negative_probe.py</span></div></li>
         </ul>
       </li>
 
@@ -387,18 +390,31 @@ li.collapsed > ul.kids{display:none}
   });
   const btns = document.querySelectorAll('.mind-top .mini');
   const setActive = (el) => btns.forEach(b => b.classList.toggle('on', b === el));
+  const topLevel = () => mind.querySelectorAll('ul.kids > li');
+  const showOnly = (n) => {
+    topLevel().forEach(li => li.classList.add('collapsed'));
+    topLevel().forEach((li, i) => { if (i < n) li.classList.remove('collapsed'); });
+  };
+  document.querySelector('[data-act="intro"]').addEventListener('click', (e) => {
+    showOnly(2);
+    setActive(e.currentTarget);
+  });
   document.querySelector('[data-act="expand"]').addEventListener('click', (e) => {
     mind.querySelectorAll('li.collapsed').forEach(li => li.classList.remove('collapsed'));
     setActive(e.currentTarget);
   });
   document.querySelector('[data-act="collapse"]').addEventListener('click', (e) => {
-    mind.querySelectorAll('ul.kids > li').forEach(li => li.classList.add('collapsed'));
+    showOnly(0);
     setActive(e.currentTarget);
   });
+  // 默认进「入门」：只展开前两支，先看懂怎么跑，再往下钻
+  showOnly(2);
 })();
 </script>
 </body>
 </html>
+
+
 
 
 
