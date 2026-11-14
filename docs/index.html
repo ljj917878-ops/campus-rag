@@ -317,7 +317,7 @@ li.collapsed > ul.kids{display:none}
           <li><div class="nd">对<b>离题</b>负例：分差 <span class="mono">0.917</span>、top1 <span class="mono">0.887</span>、命中词数 <span class="mono">0.881</span> → 离题问题能分</div></li>
           <li><div class="nd">对<b>话题内缺失</b>的难负例（校医院周末开不开门）：全掉下来——命中词数 <span class="mono">0.875</span>、覆盖率 <span class="mono">0.826</span>、IDF 覆盖率 <span class="mono">0.795</span>、top1 <span class="mono">0.739</span>、分差 <span class="mono">0.723</span>，置信区间都很宽（<span class="mono">±0.2</span>）</div></li>
           <li><div class="nd">所以「分差」在这批难负例上只有 <span class="mono">0.723</span>——训练集上的干净是假象。词面信号分不开「同义词」和「真没写」，这不是调参能解决的</div></li>
-          <li><div class="nd"><span class="bad">结论</span>单靠一个分数阈值判「有没有依据」，在这份手册上<b>不成立</b>——要么全放行、要么误拒一半。<b>这条负面结果比一个漂亮阈值更有价值</b>，下一步是组合信号（关键词命中 + 覆盖率 + 分差）而不是继续调一个数</div></li>
+          <li><div class="nd"><span class="bad">结论</span>单靠一个分数阈值判「有没有依据」，在这份手册上<b>不成立</b>——要么全放行、要么误拒一半。<b>这条负面结果比一个漂亮阈值更有价值</b>。下一步不是「把三个信号加权投票」那种凑法：<b>离题的能拒，话题内缺失的只能降档提示</b>（给出最接近的原文 + 一句「可能没直接回答你」），阈值留给交叉验证，最后再拿一份别人写的新题测一次</div></li>
         </ul>
       </li>
 
@@ -441,6 +441,7 @@ li.collapsed > ul.kids{display:none}
 </script>
 </body>
 </html>
+
 
 
 
