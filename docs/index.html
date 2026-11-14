@@ -572,13 +572,13 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
       <li class="collapsed">
         <div class="nd lv1 has-kids"><span class="no">02</span><b>它怎么跑：七步</b><span class="val">启动跑 3 步 · 每次提问跑 4 步</span><i class="chev"></i></div>
         <ul class="kids">
-          <li><div class="nd"><b>01 读入</b>：按空行切 12 段，记每段起始位置 <code>rag_engine.py:206</code></div></li>
-          <li><div class="nd"><b>02 切分</b>：先按「第 X 条」分条，条内按句号分句，280 字只是上限 → 15 张（共 2647 字符，平均 176）<code>:195</code> <span class="ok">#1 已修</span></div></li>
-          <li><div class="nd"><b>03 索引</b>：先用 jieba 把中文切成词（<span class="mono">宿舍/几点/熄灯</span>），再把 15 张卡片 × 1857 个词的权重算成一张表（这就是 TF-IDF），只在启动时建一次 <code>:331</code></div></li>
-          <li><div class="nd"><b>04 检索</b>：问题也用同一套词表转成权重，再和 15 张卡片逐个比「方向像不像」（余弦相似度：只看朝向，不看句子长短），取最像的 4 张 <code>:342</code></div></li>
-          <li><div class="nd"><b>05 判定</b>：最高分低于门槛（0.02）就直接回 <span class="mono">no_evidence</span>——意思是「判定为没有依据」，此时不调模型、直说不知道 <code>:400/:417</code> <span class="bad">缺陷 #2</span></div></li>
-          <li><div class="nd"><b>06 组装</b>：挑最像的 4 句原话，抄不改写 <code>:543</code></div></li>
-          <li><div class="nd"><b>07 作答</b>：答案 + （依据：卡片编号），引用去重 <code>app.py:234</code></div></li>
+          <li><div class="nd"><b>01 读入</b>：按空行切 12 段，记每段起始位置 <code data-snippet="paragraphs = [p.strip()">rag_engine.py:206</code></div></li>
+          <li><div class="nd"><b>02 切分</b>：先按「第 X 条」分条，条内按句号分句，280 字只是上限 → 15 张（共 2647 字符，平均 176）<code data-fn="split_into_chunks">:195</code> <span class="ok">#1 已修</span></div></li>
+          <li><div class="nd"><b>03 索引</b>：先用 jieba 把中文切成词（<span class="mono">宿舍/几点/熄灯</span>），再把 15 张卡片 × 1857 个词的权重算成一张表（这就是 TF-IDF），只在启动时建一次 <code data-fn="_fit">:331</code></div></li>
+          <li><div class="nd"><b>04 检索</b>：问题也用同一套词表转成权重，再和 15 张卡片逐个比「方向像不像」（余弦相似度：只看朝向，不看句子长短），取最像的 4 张 <code data-fn="retrieve">:342</code></div></li>
+          <li><div class="nd"><b>05 判定</b>：最高分低于门槛（0.02）就直接回 <span class="mono">no_evidence</span>——意思是「判定为没有依据」，此时不调模型、直说不知道 <code>ask() 里</code> <span class="bad">缺陷 #2</span></div></li>
+          <li><div class="nd"><b>06 组装</b>：挑最像的 4 句原话，抄不改写 <code data-fn="_compose_answer">:543</code></div></li>
+          <li><div class="nd"><b>07 作答</b>：答案 + （依据：卡片编号），引用去重 <code>app.py main()</code></div></li>
         </ul>
       </li>
 
@@ -691,10 +691,10 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
       <li class="collapsed">
         <div class="nd lv1 has-kids"><span class="no">08</span><b>四个文件</b><span class="val">谁调谁</span><i class="chev"></i></div>
         <ul class="kids">
-          <li><div class="nd"><b>app.py</b> 209 行 · 界面、按钮、答题区，只负责「展示」和「把点击转成调用」</div></li>
-          <li><div class="nd"><b>rag_engine.py</b> 521 行 · 核心：切分→建索引→检索→判定→拼答案，七个环节六个在这</div></li>
-          <li><div class="nd"><b>generator.py</b> 142 行 · 可选：有 Key 才走大模型改写，失败回退抄原句</div></li>
-          <li><div class="nd"><b>evaluation.py</b> 332 行 · 15 道题打分，够不够线决定「能不能合进去」</div></li>
+          <li><div class="nd"><b>app.py</b> <span data-lines="app.py">248</span> 行 · 界面、按钮、答题区，只负责「展示」和「把点击转成调用」</div></li>
+          <li><div class="nd"><b>rag_engine.py</b> <span data-lines="rag_engine.py">607</span> 行 · 核心：切分→建索引→检索→判定→拼答案，七个环节六个在这</div></li>
+          <li><div class="nd"><b>generator.py</b> <span data-lines="generator.py">170</span> 行 · 可选：有 Key 才走大模型改写，失败回退抄原句</div></li>
+          <li><div class="nd"><b>evaluation.py</b> <span data-lines="evaluation.py">367</span> 行 · 15 道题打分，够不够线决定「能不能合进去」</div></li>
           <li><div class="nd">调用关系：<span class="mono">app.py → rag_engine.py →（可选）generator.py</span>；evaluation.py 独立跑，把 rag_engine 当被测对象</div></li>
         </ul>
       </li>

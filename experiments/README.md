@@ -86,3 +86,21 @@ cd experiments; $env:PYTHONPATH=".."; ..\.venv\Scripts\python.exe signal_auc_cla
 | 分差 | 0.76 | 0.94 |
 
 同一套代码，训练正例对离题负例的分差 AUC = 1.00。**0.76 / 0.94 / 1.00 取决于拿谁去算**——这就是过拟合陷阱。
+
+
+## 页面引用的行号怎么保持同步
+
+docs/index.html 里的行号不要手写维护，跑一次工具即可：
+
+`powershell
+.\.venv\Scripts\python.exe toolsefresh_refs.py        # 同步
+.\.venv\Scripts\python.exe toolsefresh_refs.py --check # 只报告差异，可放进提交前检查
+`
+
+它做三件事：
+
+1. <code data-fn="函数名"> 的引用按 def 所在行重算；
+2. <code data-snippet="某行代码片段"> 的引用按「包含这段文字的第一行」重算；
+3. 四个源文件的行数（data-lines）按真实行数重算，docs/code.html 里每个代码块的 行号范围 按逐行匹配重新定位。
+
+改完 .py 之后跑一遍，页面就不会再和代码对不上。
