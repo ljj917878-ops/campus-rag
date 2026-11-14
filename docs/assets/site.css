@@ -1,3 +1,13 @@
+
+/* 自托管中文字体：Noto Sans SC 子集（只含本站用到的 892 个字，248 KB） */
+@font-face{
+  font-family:"NotoSC";
+  src:url("noto-sans-sc-sub.woff2") format("woff2-variations"),
+      url("noto-sans-sc-sub.woff2") format("woff2");
+  font-weight:400 700;
+  font-style:normal;
+  font-display:swap;
+}
 ﻿/* CampusRAG · 一页看懂 —— 全站统一设计（深色底 + 薄荷绿主色） */
 :root{
   --bg:#0e1217;
@@ -147,3 +157,56 @@ details.qa .a code{background:rgba(255,255,255,.06)}
 
 
 
+
+/* ── 字体层（2026-11-14）：本机实测 Metro 字体只有雅黑 UI / Segoe UI / Cascadia Mono 真实存在 ── */
+:root{
+  --sans:"Segoe UI","Microsoft YaHei UI","Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+  --mono:"Cascadia Mono",Consolas,"Courier New",ui-monospace,monospace;
+  --ls-cjk:.012em;      /* 中文轻微字距，减少方块感 */
+  --ls-tight:-.018em;   /* 大字标题收紧 */
+}
+body{
+  font:15.5px/1.78 var(--sans);
+  letter-spacing:var(--ls-cjk);
+  text-rendering:optimizeLegibility;
+  -webkit-font-smoothing:antialiased;
+}
+h1{font-weight:700;letter-spacing:var(--ls-tight);line-height:1.24}
+h2,h3{letter-spacing:-.008em}
+/* 数字统一等宽，表格与徽章不会左右跳 */
+.no,.big,.tbl td,.tbl th,.mini,.kicker,.loc,.tag,.bad,.ok{
+  font-variant-numeric:tabular-nums;
+}
+.kicker,.loc,.tag{
+  font-weight:600;letter-spacing:.06em;
+}
+/* 西文与代码标签：Segoe UI 的小字号更清楚 */
+.mini,.bad,.ok,.chip{font-family:var(--sans)}
+code,.mono,pre,.cside pre,.ln{font-family:var(--mono)}
+code{font-size:.9em;letter-spacing:0}
+.cside pre{font-family:var(--mono);font-size:12.4px;line-height:1.8}
+.ln{font-size:10.5px;letter-spacing:.02em}
+/* 小标签别用正黑体粗，细一点更像系统 UI */
+.nside,.what,.sub{letter-spacing:.008em}
+@media (max-width:620px){
+  body{font-size:15px;line-height:1.76}
+}
+
+/* 字体层第二轮：CJK 排版细节 */
+body{font-size:15px;line-height:1.82;letter-spacing:.015em}
+h1{font-weight:700;letter-spacing:-.022em;line-height:1.26}
+h2{font-weight:700;letter-spacing:-.012em}
+p,h1,h2,h3,li,.nd,.nside,.what{
+  text-wrap:pretty;          /* Chrome 117+：自动避免行尾孤字 */
+}
+.sub{max-width:none}
+.note,.what{letter-spacing:.008em}
+/* 徽章与数字更利落 */
+.tag,.bad,.ok,.mini{font-weight:600;letter-spacing:.02em}
+table.tbl th{font-weight:600;letter-spacing:.02em}
+
+:root{--sans:"NotoSC","Segoe UI","Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif}
+body,h1,h2,h3,.nd,.nside,.mini{font-family:var(--sans)}
+code,pre,.mono,.ln,.tag{font-family:var(--mono)}
+/* Noto 的汉字比雅黑略宽，字距收一点 */
+body{letter-spacing:.004em}
