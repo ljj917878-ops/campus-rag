@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -146,7 +146,7 @@ li.collapsed > ul.kids{display:none}
 .legend i.amber{background:var(--amber)}
 
 /* 宽屏：真正的横向思维导图（根在左，逐层向右分支） */
-@media (min-width:900px){
+@media (min-width:1280px){
   .mind{display:flex;align-items:center}
   .mind > .mroot{flex:0 0 auto;margin-right:36px;position:relative}
   .mind > ul.kids{position:relative}
@@ -183,6 +183,10 @@ li.collapsed > ul.kids{display:none}
   .nd.lv1{font-size:14.6px;padding:9px 11px}
   .nd .num,.nd.lv1 .val{display:none}
 }
+</style>
+<style>
+  /* 横向思维导图约需 1220px：窄于 1280px 一律退回竖排缩进树，避免整页横向滚动 */
+  @media (min-width:1280px){ .wrap{max-width:1260px} }
 </style>
 
   <link rel="prefetch" href="code.html">
@@ -262,7 +266,7 @@ li.collapsed > ul.kids{display:none}
           <li><div class="nd"><b>280</b> 拍定的默认值，无标定；12 段里只有 3 段超过它，9 段整段通过</div></li>
           <li><div class="nd"><b>60</b> 取 280 的 21%，防断句；代价是重复 157 字（15 块共 2830 字）</div></li>
           <li><div class="nd"><b>4</b> 折中：取 1 怕漏、取 15 等于没检索；4 块 ≈ 1100 字</div></li>
-          <li><div class="nd"><b>0.02</b> 没标定过，<b>远低于实测交界</b>：20 个负例里 18 个能过闸（最高 0.2014）</div></li>
+          <li><div class="nd"><b>0.02</b> 没标定过，<b>几乎什么都放行</b>：34 个负例里 29 个能过闸（最高 0.2014）</div></li>
           <li>
             <details class="dp"><summary>实测：把 280 改成 120 / 180 / 420 会怎样</summary>
               <div class="dpbody">
@@ -274,7 +278,9 @@ li.collapsed > ul.kids{display:none}
                   <tr><td class="mono">280</td><td class="mono">15</td><td class="mono">0.284</td><td class="mono">0.185</td><td class="mono">0.0879</td><td class="mono">15 / 15</td></tr>
                   <tr><td class="mono">420</td><td class="mono">12</td><td class="mono">0.267</td><td class="mono">0.172</td><td class="mono">0.0857</td><td class="mono">15 / 15</td></tr>
                 </table></div>
-                <div class="note">召回全都 15/15 没变；块越小，<b>正例和负例的分一起涨</b>（噪声更危险）；420 时 12 段几乎整段通过 = 没切。<b>该修的是切法，不是把数字调来调去。</b><br>复现：<span class="mono">.venv\\Scripts\\python.exe experiments\\chunk_size_sweep.py</span></div>
+                <div class="note">召回全都 15/15 没变；块越小，<b>正例和负例的分一起涨</b>（噪声更危险）；<b>420 时是 12 块，正好等于 12 个自然段——一段没切</b>。<b>该修的是切法，不是把数字调来调去。</b></div>
+                <div class="note" style="margin-top:8px">读这张表要知道的前提：<b>块数是「重叠固定 60 字」时的结果</b>（120→38 块、180→21 块）。若按「重叠约占块大小 21%」来切，同样的 120/180 会变成 29/20 块——也就是说 120 这一行<b>同时改了块大小和重叠比例</b>（重叠占到块的一半），分数上涨有一部分来自重复内容，不能全算在「块更小」头上。要严格比，应固定重叠比例再扫一遍。</div>
+                <div class="note" style="margin-top:8px">复现：<span class="mono">python experiments/chunk_size_sweep.py</span>（Windows 虚拟环境：<span class="mono">.venv\Scripts\python.exe experiments\chunk_size_sweep.py</span>）</div>
               </div>
             </details>
           </li>
@@ -289,7 +295,8 @@ li.collapsed > ul.kids{display:none}
           <li><div class="nd"><b>手册里没有</b>：「学校火锅店几点关门」→ top1 <span class="mono">0.0879</span> → <b>照样过闸</b> → 硬答 <span class="bad">缺陷 #2</span></div></li>
           <li><div class="nd">为什么火锅能得 0.0879：6 个词里只有「学校」在词表，三张卡片都含它</div></li>
           <li><div class="nd">单看分数分不开：34 个负例最高 <span class="mono">0.2014</span>，正例最低 <span class="mono">0.1852</span>——<b>区间是重叠的</b></div></li>
-          <li><div class="nd">但看「top1 减 top2 的分差」就分开了：负例最大 <span class="mono">0.1205</span>，正例最小 <span class="mono">0.1353</span></div></li>
+          <li><div class="nd">换成看「top1 减 top2 的分差」，这批样本里两类分开了，<b>但间隔只有 0.015</b>（负例最大 <span class="mono">0.1205</span>，正例最小 <span class="mono">0.1353</span>），而且这条线是在同一批样本上找出来的，<b>没在新问题上验证过</b></div></li>
+          <li><div class="nd">去验证了（见 05 支的留出测试）：<b>没通过</b>——12 个换问法的正例被误拒 6 个。所以「分差」不能说成结论，只能说「训练样本上成立、留出集上不成立」</div></li>
         </ul>
       </li>
 
@@ -302,6 +309,11 @@ li.collapsed > ul.kids{display:none}
           <li><div class="nd">实测结果：15 题<b>全 1.00</b>，门禁通过——但这是「满分」不是「完美」</div></li>
           <li><div class="nd"><span class="bad">缺陷 #3</span>15 题<b>全是正样本</b>，没有一道「手册里没有」的题，所以测不出拒答失效</div></li>
           <li><div class="nd">忠实度算法：每句任取 <b>8 字滑窗</b>命中上下文即算有依据 → 抽取式答案<b>几乎必然 1.00</b>，指标无区分度</div></li>
+          <li><div class="nd"><b>留出测试</b>（<span class="mono">heldout_check.py</span>）：12 条换了问法的正例 + 11 条「话题在手册里、这件事没写」的难负例</div></li>
+          <li><div class="nd">结果 · 规则 A（门槛 0.02）：正例放行 <b>12/12</b>，难负例只拒 <b>3/11</b> → 几乎不拒答</div></li>
+          <li><div class="nd">结果 · 规则 B（分差 ≥ 0.13）：正例只放行 <b>6/12</b>（误拒一半），难负例拒 <b>8/11</b> → 误拒太狠</div></li>
+          <li><div class="nd">规则 B 误拒的 6 条里，<b>1 条</b>确实是 top1 与 top2 文本重叠（60 字重叠区）造成的；剩下 5 条是换问法后字面重合度下降</div></li>
+          <li><div class="nd"><span class="bad">结论</span>单靠一个分数阈值判「有没有依据」，在这份手册上<b>不成立</b>——要么全放行、要么误拒一半。<b>这条负面结果比一个漂亮阈值更有价值</b>，下一步是组合信号（关键词命中 + 覆盖率 + 分差）而不是继续调一个数</div></li>
         </ul>
       </li>
 
@@ -310,10 +322,10 @@ li.collapsed > ul.kids{display:none}
         <div class="nd lv1 has-kids"><span class="no">06</span><b>三处真缺陷</b><span class="val">都有证据</span><i class="chev"></i></div>
         <ul class="kids">
           <li><div class="nd"><span class="bad">#1</span>切分按字符硬切，不看标点；<code>chunk-004</code> 的章节名字段变成了「。」</div></li>
-          <li><div class="nd"><span class="bad">#2</span>门槛 0.02 几乎什么都放行（34 个负例放走 <b>29</b> 个，拒答率只有 15%）；把绝对分数调到最优 <span class="mono">0.18</span> 也只能做到「1 个负例漏网」，<b>分差（top1−top2）才是干净的那道线</b></div></li>
+          <li><div class="nd"><span class="bad">#2</span>门槛 0.02 几乎什么都放行（34 个负例放走 <b>29</b> 个）；绝对分数调到最优 <span class="mono">0.18</span> 仍漏 1 个；换成分差（top1−top2 ≥ 0.13）在训练样本上能全分开，<b>但留出测试里误拒了一半正例</b>——所以这条缺陷到 2026-11-14 还没修好</div></li>
           <li><div class="nd"><span class="bad">#3</span>评测集全正例 + 忠实度无区分度，导致前两个缺陷测不出来</div></li>
           <li><div class="nd"><b>三者串起来</b>：切坏 → 门槛虚设 → 评测还测不出 = 系统会一本正经答错，且没人报警</div></li>
-          <li><div class="nd">怎么交代（<b>只说真做过的</b>）：「这套的 15 题是项目自带的，我先把它跑通复现了满分，然后自己加了 20 个手册里没有的问题去打，才发现门禁测不出拒答失效」</div></li>
+          <li><div class="nd">怎么交代（<b>只说真做过的</b>）：「这套的 15 题是项目自带的，我先把它跑通复现了满分，然后自己加了 34 个手册里没有的问题去打，才发现门禁测不出拒答失效」</div></li>
         </ul>
       </li>
 
@@ -354,7 +366,8 @@ li.collapsed > ul.kids{display:none}
           <li><div class="nd"><b>为什么不用向量模型？</b>不是「跑不动」——小型中文 embedding（如 bge-small）在 CPU 上也能离线跑；选 TF-IDF 是因为<b>先要一条人人能看懂、能逐词核对的基线</b>。代价是只认字面（退学≠终止学籍），下一步做 TF-IDF vs 向量 的对照实验再决定</div></li>
           <li><div class="nd"><b>余弦和欧氏区别？</b>余弦只看方向，不受文本长短影响</div></li>
           <li><div class="nd"><b>top_k 怎么定？</b>折中；正经做法是画召回率/上下文长度曲线找拐点</div></li>
-          <li><div class="nd"><b>阈值该定多少？</b>实测 15 正 + 34 负：绝对分数最优 <span class="mono">0.18</span>，但仍有 1 个负例（0.2014）漏过；改成看 <b>top1−top2 ≥ 0.13</b>，34 个负例全拒、15 个正例全过。样本小，只算初步结论</div></li>
+          <li><div class="nd"><b>阈值该定多少？</b>不能只报一个数。实测 15 正 + 34 负：绝对分数最优 <span class="mono">0.18</span>（仍漏 1 个负例）；分差 ≥ 0.13 在训练集全分开，<b>但留出测试误拒 6/12 正例</b></div></li>
+          <li><div class="nd">老实说：<b>单阈值这条路我没走通</b>。要么放行一切，要么误拒一半。下一步是组合信号（关键词命中 + 答案覆盖率 + 分差）+ 按重叠区特判，而不是继续调一个数</div></li>
           <li><div class="nd"><b>评测集可信吗？</b>不可信的两个理由：全正样本、忠实度对抽取式恒 1.00</div></li>
           <li><div class="nd"><b>为什么抄不生成？</b>可核对；生成式放 generator.py 当可选项</div></li>
           <li><div class="nd"><b>100 万字先崩哪？</b>索引：内存矩阵 + 每次重建；要换倒排/增量/ANN</div></li>
@@ -366,6 +379,8 @@ li.collapsed > ul.kids{display:none}
       <li class="collapsed">
         <div class="nd lv1 has-kids"><span class="no">10</span><b>30 秒口述</b><span class="val">面试开场用</span><i class="chev"></i></div>
         <ul class="kids">
+          <li><div class="nd"><b>30 秒稿（约 120 字，背下来的是这个）</b>：「这是个校园手册问答项目。它把手册切成带重叠的小卡片，用 TF-IDF 给词打分；提问时找出最像的 4 张，分数太低就说依据不足，够了就从原文挑句子并标出处。原型是 AI 给的，我没直接用，而是读懂后自己验证——发现自带评测全是正例，测不出拒答失效。」</div></li>
+          <li><div class="nd"><b>被追问再展开</b>（下面 1–5 是展开顺序，不是要背的稿）</div></li>
           <li><div class="nd">1. 文档进来先切分，每块约 280 字、留 60 字重叠，避免断句</div></li>
           <li><div class="nd">2. 每块用 TF-IDF 建索引，算的是「这词在本块多、在别块少」</div></li>
           <li><div class="nd">3. 用户提问同法转权重，余弦相似度取最像的 4 块</div></li>
@@ -374,7 +389,7 @@ li.collapsed > ul.kids{display:none}
           <li><div class="nd"><b>先把来路说清楚</b>：「原型是 AI 工具给我的，我没有直接用——先读懂、画了流程图，然后自己去验证它的问题」</div></li>
           <li><div class="nd"><b>再说你做过什么</b>：跑通评测复现满分、写脚本扫切块大小、加了 34 个负例把拒答问题逼出来</div></li>
           <li><div class="nd"><b>这段只记关键词，别背原句</b>：切分 → 建索引 → 检索 → 判门槛 → 抽原文 → 标出处</div></li>
-          <li><div class="nd">被深聊就接：<b>「这套的短板我清楚：自带评测全是正样本，测不出拒答失效；我自己加了 20 个负例才把它逼出来」</b>——前提是你真跑过 <span class="mono">experiments\\negative_probe.py</span></div></li>
+          <li><div class="nd">被深聊就接：<b>「这套的短板我清楚：自带评测全是正样本，测不出拒答失效；我自己加了 34 个负例才把它逼出来，还做了留出测试，结果分差规则没通过」</b>——前提是你真跑过 <span class="mono">experiments\\negative_probe.py</span></div></li>
         </ul>
       </li>
 
@@ -387,8 +402,8 @@ li.collapsed > ul.kids{display:none}
   </div>
 </div>
 
-<footer class="site-foot">CampusRAG · 一张图看全 · 数据来自 2026-11-14 真跑 · 仓库 ljj917878-ops/campus-rag<br>
-<span class="mono" style="font-size:12px">复现：.venv\Scripts\python.exe experiments\chunk_size_sweep.py / negative_probe.py / threshold_scan.py</span></footer>
+<footer class="site-foot">CampusRAG · 一张图看全 · 仓库 ljj917878-ops/campus-rag · 提交 <span class="mono">e0f992d</span><br>
+<span class="mono" style="font-size:12px">数据由 experiments/ 下的脚本在 2026-11-14 生成：chunk_size_sweep.py · negative_probe.py · threshold_scan.py · heldout_check.py</span></footer>
 
 <script>
 (() => {
@@ -422,6 +437,7 @@ li.collapsed > ul.kids{display:none}
 </script>
 </body>
 </html>
+
 
 
 
