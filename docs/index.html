@@ -313,6 +313,10 @@ li.collapsed > ul.kids{display:none}
           <li><div class="nd">结果 · 规则 A（门槛 0.02）：正例放行 <b>12/12</b>，难负例只拒 <b>3/11</b> → 几乎不拒答</div></li>
           <li><div class="nd">结果 · 规则 B（分差 ≥ 0.13）：正例只放行 <b>6/12</b>（误拒一半），难负例拒 <b>8/11</b> → 误拒太狠</div></li>
           <li><div class="nd">规则 B 误拒的 6 条里，<b>1 条</b>确实是 top1 与 top2 文本重叠（60 字重叠区）造成的；剩下 5 条是换问法后字面重合度下降</div></li>
+          <li><div class="nd"><b>信号体检</b>（<span class="mono">signal_auc.py</span>）：先不选方案，逐个信号算 AUC——随机取一个正例和一个负例，正例分数更高的概率，0.5 等于瞎猜</div></li>
+          <li><div class="nd">对<b>离题</b>负例：分差 <span class="mono">0.917</span>、top1 <span class="mono">0.887</span>、命中词数 <span class="mono">0.881</span> → 离题问题能分</div></li>
+          <li><div class="nd">对<b>话题内缺失</b>的难负例（校医院周末开不开门）：全掉下来——命中词数 <span class="mono">0.875</span>、覆盖率 <span class="mono">0.826</span>、IDF 覆盖率 <span class="mono">0.795</span>、top1 <span class="mono">0.739</span>、分差 <span class="mono">0.723</span>，置信区间都很宽（<span class="mono">±0.2</span>）</div></li>
+          <li><div class="nd">所以「分差」在这批难负例上只有 <span class="mono">0.723</span>——训练集上的干净是假象。词面信号分不开「同义词」和「真没写」，这不是调参能解决的</div></li>
           <li><div class="nd"><span class="bad">结论</span>单靠一个分数阈值判「有没有依据」，在这份手册上<b>不成立</b>——要么全放行、要么误拒一半。<b>这条负面结果比一个漂亮阈值更有价值</b>，下一步是组合信号（关键词命中 + 覆盖率 + 分差）而不是继续调一个数</div></li>
         </ul>
       </li>
@@ -403,7 +407,7 @@ li.collapsed > ul.kids{display:none}
 </div>
 
 <footer class="site-foot">CampusRAG · 一张图看全 · 仓库 ljj917878-ops/campus-rag · 提交 <span class="mono">a255ac0</span><br>
-<span class="mono" style="font-size:12px">数据由 experiments/ 下的脚本在 2026-11-14 生成：chunk_size_sweep.py · negative_probe.py · threshold_scan.py · heldout_check.py</span></footer>
+<span class="mono" style="font-size:12px">数据由 experiments/ 下的脚本在 2026-11-14 生成：chunk_size_sweep.py · negative_probe.py · threshold_scan.py · heldout_check.py · signal_auc.py</span></footer>
 
 <script>
 (() => {
@@ -437,6 +441,7 @@ li.collapsed > ul.kids{display:none}
 </script>
 </body>
 </html>
+
 
 
 
