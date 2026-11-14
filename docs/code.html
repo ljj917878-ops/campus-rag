@@ -396,7 +396,6 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
   ul.kids > li{animation:none}
 }
 </style>  <link rel="prefetch" href="code.html">
-<link rel="prefetch" href="all.html">
 </head><body>
 <div class="site-head">
   <div class="bar">
@@ -567,7 +566,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
                 if use_generative:
                     answer_mode = "extractive_fallback"
                 else:
-                    answer_mode = "extractive"</pre></div><div class="nside">关键保底：生成式没给出内容（没配密钥、返回空）就退回抽取式，保证一定有答案。注意：如果调用直接抛异常，走的是 331 行的错误分支，不是降级。</div></div><div class="blk"><div class="cside"><div class="ln">482–491</div><pre>        citations = [
+                    answer_mode = "extractive"</pre></div><div class="nside">关键保底：生成式没给出内容（没配密钥、返回空）就退回抽取式，保证一定有答案。注意：如果调用直接抛异常，走的是 470 行的 except 分支（记一条 error 日志），不是降级。</div></div><div class="blk"><div class="cside"><div class="ln">482–491</div><pre>        citations = [
             Citation(
                 chunk_id=chunk.chunk_id,
                 source=chunk.source,
@@ -648,7 +647,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
 <div class="panel" id="bad">
   <h2>三个真问题（真跑出来的）</h2>
   <p class="lead">这三条不是猜的，是拿问题去问它、然后看日志和输出得到的。</p>
-  <div class="warn"><h4>卡片是按字数切的，不认句子</h4><p>12 段里有 3 段超过 280 字（293 / 304 / 299），被按 220 字一格硬切，于是第 4、8、10 张卡片从句子中间开始：-004 以「。」开头，-008 以「重警告处分；因此造成火情的，从重处理。」开头，-010 以「费为 20 元，挂失成功后原卡即时失效。」开头。所以答案会出现这种没头没尾的句子。</p><p class="ev">真实证据：campus_handbook-004 的 section 字段就是「。」，-010 的 section 是「费为 20 元，挂失成功后原卡即时失效。」——连章节名都被切歪了。</p></div><div class="warn"><h4>及格线 0.02 太低，等于没有</h4><p>问「学校附近哪家火锅好吃？」，问句 6 个词里只有「学校」在词表里，而「学校」几乎每章都有。就靠这一个词，三张卡片拿到 0.0879 / 0.0856 / 0.0835，全部过线，status=ok，答案讲的是社团、毕业证、校园网。</p><p class="ev">查证方式：把问句向量里非零的项列出来，只剩一个「学校」；余弦相似度基本就等于这一项的贡献。</p></div><div class="warn"><h4>评测 15 题全 1.00，测不出上面两个问题</h4><p>那 15 道题全是「手册里确实写了」的题，一条拒答用例都没有。所以它只能证明「问手册里有的，它能答」，证明不了「问手册里没有的，它会说不知道」。</p><p class="ev">答辩被问「怎么保证不乱答」时，这是最容易被追问的点。</p></div>
+  <div class="warn"><h4>卡片曾经是按字数硬切的（已修）</h4><p>旧版 12 段里有 3 段超过 280 字（293 / 304 / 299），被按 220 字一格硬切，于是第 4、8、10 张卡片从句子中间开始：-004 以「。」开头，-008 以「重警告处分；因此造成火情的，从重处理。」开头，-010 以「费为 20 元，挂失成功后原卡即时失效」开头——那种没头没尾的片段，检索到也没法用。</p><p><b>2026-11-14 已改成「条 → 句」两级切分</b>：先按「第 X 条」分条，条内按句号分句，280 字降级成上限（只在单句超长时才硬切）。现在 15 张卡片都从「章 / 条 / 附则」边界开始，切点只落在句子之间。上面代码批注里的 <code>_units_of()</code> 和 <code>_pack_sentences()</code> 就是新逻辑。</p></div><div class="warn"><h4>及格线 0.02 太低，等于没有</h4><p>问「学校附近哪家火锅好吃？」，问句 6 个词里只有「学校」在词表里，而「学校」几乎每章都有。就靠这一个词，三张卡片拿到 0.0879 / 0.0856 / 0.0835，全部过线，status=ok，答案讲的是社团、毕业证、校园网。</p><p class="ev">查证方式：把问句向量里非零的项列出来，只剩一个「学校」；余弦相似度基本就等于这一项的贡献。</p></div><div class="warn"><h4>评测 15 题全 1.00，测不出上面两个问题</h4><p>那 15 道题全是「手册里确实写了」的题，一条拒答用例都没有。所以它只能证明「问手册里有的，它能答」，证明不了「问手册里没有的，它会说不知道」。</p><p class="ev">答辩被问「怎么保证不乱答」时，这是最容易被追问的点。</p></div>
   <h2>自测 6 问</h2>
   <p class="lead">先自己说一遍，再点开看。能用自己的话讲清楚，这项目才算你的。</p>
   <details><summary>为什么要把手册切成 15 段，而不是整本塞进去？</summary><p>整本塞进去有两个问题：一是太长，二是没法知道答案来自哪一段。切开之后才能「找出最相关的几段」，也才能标引用。</p></details><details><summary>280 / 60 这两个数字分别管什么？</summary><p>280 = 一张卡片最多多少字；60 = 相邻卡片重叠多少字（防止一句话正好被切在边界）。步长 = 280 - 60 = 220。</p></details><details><summary>什么是「向量」？用这个项目解释。</summary><p>就是「每个词有多重要」的一串分数。15 张卡片 × 1857 个词，每张卡片就是一行 1857 个数字。</p></details><details><summary>为什么检索用 transform，建索引用 fit_transform？</summary><p>建索引时要「学」出词表，所以用 fit_transform；提问时必须用同一套词表，只能 transform，否则两边的词对不上，分数就没意义。</p></details><details><summary>「宿舍几点熄灯」只返回 3 条，不是 top_k=4 吗？</summary><p>top_k 是上限。第 4 名分数是 0，被 retrieve() 里的 `if scores[i] > 0` 过滤掉了。</p></details><details><summary>如果只让你改一处，让它更可靠，你改哪儿？</summary><p>改切段：按句子/段落边界切，保证每张卡片从完整句子开始。这一处同时修好「半句开头」和一部分「答非所问」。</p></details>
