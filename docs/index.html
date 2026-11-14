@@ -354,6 +354,17 @@ table.tbl{border-radius:var(--r-md);overflow:hidden;box-shadow:var(--sh-sm)}
 /* 标题与小标签的呼吸感 */
 .sub{margin-top:10px}
 .kicker{margin-bottom:10px}
+
+/* ── 阅读舒适度（2026-11-14）：这是给我自己看的，宁松勿紧 ── */
+:root{--fs-body:16px}
+body{font-size:var(--fs-body);line-height:1.92;color:#dae5f1;letter-spacing:.012em}
+p,li,.nside,.what,.sub{line-height:1.92}
+h1{line-height:1.28}
+h2{margin-top:2.2em}
+.nd{font-size:14.6px;line-height:1.66}
+.nd .no{font-size:11.5px}
+.mini{font-size:13px;padding:7px 13px}
+.site-foot{line-height:1.9}
 </style>
 <style>
   /* 横向思维导图约需 1220px：窄于 1280px 一律退回竖排缩进树，避免整页横向滚动 */
@@ -393,6 +404,7 @@ table.tbl{border-radius:var(--r-md);overflow:hidden;box-shadow:var(--sh-sm)}
     <button class="mini on" data-act="intro">入门：只看前两支</button>
     <button class="mini" data-act="expand">全部展开</button>
     <button class="mini" data-act="collapse">只看十根主干</button>
+    <button class="mini" data-act="fs" title="点一下换一档字号，会记住">字号 中</button>
     <span class="mini-hint" id="treeStat">代码位置都能对照</span>
   </div>
 
@@ -591,8 +603,7 @@ table.tbl{border-radius:var(--r-md);overflow:hidden;box-shadow:var(--sh-sm)}
   </div>
 </div>
 
-<footer class="site-foot">CampusRAG · 一张图看全 · 仓库 ljj917878-ops/campus-rag · 提交 <span class="mono">a255ac0</span><br>
-<span class="mono" style="font-size:12px">数据由 experiments/ 下的脚本在 2026-11-14 生成：chunk_size_sweep.py · negative_probe.py · threshold_scan.py · heldout_check.py · signal_auc.py</span></footer>
+<footer class="site-foot">更新 2026-11-14 · 仓库 ljj917878-ops/campus-rag · 提交 <span class="mono">7e0946c</span></footer>
 
 <script>
 (() => {
@@ -631,6 +642,26 @@ table.tbl{border-radius:var(--r-md);overflow:hidden;box-shadow:var(--sh-sm)}
   var nodes = document.querySelectorAll('.mind .nd');
   var el = document.getElementById('treeStat');
   if (el) el.textContent = roots.length + ' 根主干 · ' + nodes.length + ' 个细节 · 代码位置都能对照';
+})();
+</script>
+
+<script>
+(() => {
+  const FS = ['15px', '16px', '17px', '18px'];
+  const LABEL = ['小', '中', '大', '特大'];
+  let i = parseInt(localStorage.getItem('crag-fs') || '1', 10);
+  if (!(i >= 0 && i < FS.length)) i = 1;
+  const btn = document.querySelector('.mini[data-act="fs"]');
+  const apply = () => {
+    document.documentElement.style.setProperty('--fs-body', FS[i]);
+    if (btn) btn.textContent = '字号 ' + LABEL[i];
+  };
+  apply();
+  if (btn) btn.addEventListener('click', () => {
+    i = (i + 1) % FS.length;
+    localStorage.setItem('crag-fs', String(i));
+    apply();
+  });
 })();
 </script>
 </body>
