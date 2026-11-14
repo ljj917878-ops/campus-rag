@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+logs/
+.streamlit/
+eval_results.json
+.env
