@@ -546,13 +546,13 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
 <div class="wrap">
   <div class="kicker">CampusRAG · 全部内容 · 一棵树</div>
   <h1>一张图看全：这个校园手册问答项目</h1>
-  <p class="sub">十根主干都在这里，点方块展开。左边是根，往上长的是事实，往下长的是细节。</p>
+  <p class="sub">九根主干都在这里，点方块展开。左边是根，往上长的是事实，往下长的是细节。</p>
 
   <div class="note" style="margin:16px 0 4px">
     <b>30 秒看懂：</b>你问一句，它去手册里翻出最相关的几段，<b>把原话挑出来</b>回答并标出处；翻不到就说「依据不足」，不编。
     <div class="mono" style="margin-top:9px;color:#a0b0c0;font-size:13.5px">读入 → 切成卡片 → 变成数字 → 找最像的 → 够不够？ → 挑原句 → 附出处</div>
   </div>
-  <div class="mini-hint" style="margin:8px 0 14px">第一次看：先看 <b>01、02</b>（默认已展开）。准备面试：再看 <b>03–10</b>。</div>
+  <div class="mini-hint" style="margin:8px 0 14px">第一次看：先看 <b>01、02</b>（默认已展开）。想看设计和评测：再看 <b>03–09</b>。</div>
 
   <div class="legend">
     <span><i></i>带数字的 = 真跑出来的结果</span>
@@ -563,7 +563,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
   <div class="mind-top">
     <button class="mini on" data-act="intro">入门：只看前两支</button>
     <button class="mini" data-act="expand">全部展开</button>
-    <button class="mini" data-act="collapse">只看十根主干</button>
+    <button class="mini" data-act="collapse">只看九根主干</button>
     <button class="mini" data-act="fs" title="点一下换一档字号，会记住">字号 中</button>
     <span class="mini-hint" id="treeStat">代码位置都能对照</span>
   </div>
@@ -673,7 +673,8 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
         <ul class="kids">
           <li><div class="nd"><b>一句话结论</b><span>它<u>能拒「跟手册无关」的问题</u>，但<u>拒不了「话题在手册里、这件事没写」</u>，后者会答得像模像样却是错的</span></div></li>
           <li><div class="nd"><b>找得准</b><span>60 道测试题里的 30 道正常问题，正确的那段手册 27 次排第一、30 次都进了前四（hit@1 27/30，hit@4 30/30）</span></div></li>
-          <li><div class="nd"><b>拒得了离题，拒不了缺失</b><span>15 道跟手册无关的题，0 道硬答；15 道「手册没写这件事」的题，11 道照常作答</span></div></li>
+          <li><div class="nd"><b>拒得了离题，拒不了缺失</b><span>15 道跟手册无关的题，0 道硬答。离题 15 题：13 道拒答，2 道降成低置信（给最接近原文并提示），0 道硬答；15 道「手册没写这件事」的题，11 道照常作答</span></div></li>
+          <li><div class="nd"><b>低置信的代价</b><span>27 条检索正确的正例里，5 条（约 19%）被降成低置信。三档是用「少答错」换「多提示」</span></div></li>
           <li><div class="nd"><b>老实说</b><span>这 60 题是 AI 助手写的、已经跑过两次，只能当回归对照（「冻结测试 v1：已用于诊断」）；单靠一个分数阈值走不通，三档判定已上线，只算部分缓解</span></div></li>
           <li><div class="nd"><b>详细见</b><a href="eval.html">评测复盘页</a><span>完整过程、时间线、每个数的提交号都在那里</span></div></li>
         </ul>
@@ -684,10 +685,10 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
         <div class="nd lv1 has-kids"><span class="no">06</span><b>三处真缺陷</b><span class="val">都有证据</span><i class="chev"></i></div>
         <ul class="kids">
           <li><div class="nd"><span class="bad">#1 已修</span>原来按字符硬切、不看标点（<code>chunk-004</code> 的章节名变成「。」）；2026-11-14 改成「先分条、再分句」，切点只落在条与句之间，评测 15 题仍全 1.00</div></li>
-          <li><div class="nd"><span class="bad">#2 部分缓解</span>门槛 0.02 几乎什么都放行（34 个负例放走 <b>29</b> 个，新旧切法都是）；绝对分数调到最优 <span class="mono">0.18</span> 仍漏 1 个；换成分差（top1−top2 ≥ 0.13）在训练样本上能全分开，<b>但留出测试里误拒了一半正例</b>（以上为旧切法）。2026-11-14 上线三档判定（7dcf517）后：离题能拒（冻结题 0/15 硬答），但话题内缺失仍有 <b>11/15</b> 落在高置信档——所以只算<b>部分缓解</b></div></li>
+          <li><div class="nd"><span class="bad">#2 部分缓解</span>门槛 0.02 几乎什么都放行（34 个负例放走 <b>29</b> 个，新旧切法都是）；绝对分数调到最优 <span class="mono">0.18</span> 仍漏 1 个；换成分差（top1−top2 ≥ 0.13）在训练样本上能全分开，<b>但留出测试里误拒了一半正例</b>（以上为旧切法）。2026-11-14 上线三档判定（7dcf517）后：离题能拒（冻结题硬答 0/15）。离题 15 题：13 道拒答，2 道降成低置信（给最接近原文并提示），0 道硬答。但话题内缺失仍有 <b>11/15</b> 落在高置信档——所以只算<b>部分缓解</b></div></li>
           <li><div class="nd"><span class="bad">#3</span>评测集全正例 + 忠实度无区分度，导致前两个缺陷测不出来</div></li>
           <li><div class="nd"><b>三者串起来</b>：切坏 → 门槛虚设 → 评测还测不出 = 系统会一本正经答错，且没人报警</div></li>
-          <li><div class="nd">怎么交代（<b>只说真做过的</b>）：「这套的 15 题是项目自带的，我先把它跑通复现了满分，然后自己加了 34 个手册里没有的问题去打，才发现门禁测不出拒答失效」</div></li>
+          <li><div class="nd">后来补了 34 个手册里没有的问题去做阈值扫描，才发现 0.02 门槛几乎放行一切。这 34 条是后补进扫描的，不是项目一开始就有的</div></li>
         </ul>
       </li>
 
@@ -732,38 +733,20 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
           </div>
       </li>
 
-      <!-- ⑨ 面试问答 -->
+      <!-- ⑨ 设计取舍 -->
       <li class="collapsed">
-        <div class="nd lv1 has-kids"><span class="no">09</span><b>面试会被追问什么</b><span class="val">记关键词，别背原句</span><i class="chev"></i></div>
+        <div class="nd lv1 has-kids"><span class="no">09</span><b>这些选择是怎么来的</b><span class="val">取舍和代价</span><i class="chev"></i></div>
         <ul class="kids">
           <li><div class="nd"><b>为什么一开始按字数切？</b>省事，代价是断句（分块从半句话开始）；现在改成「条 → 句」两级切，280 只当上限，靠评测兜住不能退步</div></li>
           <li><div class="nd"><b>为什么不用向量模型？</b>不是「跑不动」——小型中文 embedding（如 bge-small）在 CPU 上也能离线跑；选 TF-IDF 是因为<b>先要一条人人能看懂、能逐词核对的基线</b>。代价是只认字面（退学≠终止学籍），下一步做 TF-IDF vs 向量 的对照实验再决定</div></li>
           <li><div class="nd"><b>余弦和欧氏区别？</b>余弦只看方向，不受文本长短影响</div></li>
           <li><div class="nd"><b>top_k 怎么定？</b>折中；正经做法是画召回率/上下文长度曲线找拐点</div></li>
           <li><div class="nd"><b>阈值该定多少？</b>不能只报一个数。实测 15 正 + 34 负（旧切法）：绝对分数最优 <span class="mono">0.18</span>（仍漏 1 个负例）；分差 ≥ 0.13 在训练集全分开，<b>但留出测试误拒 6/12 正例</b></div></li>
-          <li><div class="nd">老实说：<b>单阈值这条路我没走通</b>。要么放行一切，要么误拒一半。现在已上线三档判定（按问句实词命中数），离题能拒、话题内缺失还拒不掉；下一步是另找人写冻结测试 v2，再试词面以外的信号，而不是继续调一个数</div></li>
+          <li><div class="nd"><b>单阈值这条路没走通</b>。要么放行一切，要么误拒一半。现在已上线三档判定（按问句实词命中数），离题能拒、话题内缺失还拒不掉；下一步是另找人写冻结测试 v2，再试词面以外的信号，而不是继续调一个数</div></li>
           <li><div class="nd"><b>评测集可信吗？</b>不可信的两个理由：全正样本、忠实度对抽取式恒 1.00</div></li>
           <li><div class="nd"><b>为什么抄不生成？</b>可核对；生成式放 generator.py 当可选项</div></li>
           <li><div class="nd"><b>100 万字先崩哪？</b>索引：内存矩阵 + 每次重建；要换倒排/增量/ANN</div></li>
           <li><div class="nd"><b>最脆弱一环？</b>判定闸——它坏了不报错，只会自信地答错，而评测集正好测不出</div></li>
-        </ul>
-      </li>
-
-      <!-- ⑩ 30 秒 -->
-      <li class="collapsed">
-        <div class="nd lv1 has-kids"><span class="no">10</span><b>30 秒口述</b><span class="val">面试开场用</span><i class="chev"></i></div>
-        <ul class="kids">
-          <li><div class="nd"><b>30 秒稿（约 120 字，背下来的是这个）</b>：「这是个校园手册问答项目。它把手册按条和句切成小卡片，用 TF-IDF 给词打分；提问时找出最像的 4 张，分数太低就说依据不足，够了就从原文挑句子并标出处。原型是 AI 给的，我没直接用，而是读懂后自己验证——发现自带评测全是正例，测不出拒答失效。」</div></li>
-          <li><div class="nd"><b>被追问再展开</b>（下面 1–5 是展开顺序，不是要背的稿）</div></li>
-          <li><div class="nd">1. 文档进来先按「条」切、条内按句切，每块不超过 280 字，切点只落在条/句之间（重叠上限 60 字，这份手册上实际没有发生重叠）</div></li>
-          <li><div class="nd">2. 每块用 TF-IDF 建索引，算的是「这词在本块多、在别块少」</div></li>
-          <li><div class="nd">3. 用户提问同法转权重，余弦相似度取最像的 4 块</div></li>
-          <li><div class="nd">4. 先判最高分够不够，不够就拒答，不硬凑</div></li>
-          <li><div class="nd">5. 够了就从原句里挑，拼成答案 + 章节出处</div></li>
-          <li><div class="nd"><b>先把来路说清楚</b>：「原型是 AI 工具给我的，我没有直接用——先读懂、画了流程图，然后自己去验证它的问题」</div></li>
-          <li><div class="nd"><b>再说你做过什么</b>：只讲自己真做过的。这个项目的代码、脚本和评测主要是 AI 助手写的，你负责定目标、判断结果、决定改不改；可以讲你怎么发现「自带评测全是正样本、测不出拒答」并让它补上负例</div></li>
-          <li><div class="nd"><b>这段只记关键词，别背原句</b>：切分 → 建索引 → 检索 → 判门槛 → 抽原文 → 标出处</div></li>
-          <li><div class="nd">被深聊就接：<b>「这套的短板我清楚：自带评测全是正样本，测不出拒答失效；后来补了 34 个负例才把它逼出来，又做了留出测试，结果分差规则没通过。脚本是 AI 助手写的，结论我核对过」</b>——前提是你自己跑过、看懂了 <span class="mono">experiments\negative_probe.py</span></div></li>
         </ul>
       </li>
 

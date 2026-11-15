@@ -580,7 +580,8 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
         <div class="nd lv1 has-kids"><span class="no">01</span><b>结论</b><span class="val">先放结果</span><i class="chev"></i></div>
         <ul class="kids">
           <li><div class="nd"><b>检索是稳的</b>：冻结题 60 道里 30 道正例，hit@1 <b>27/30</b>（95% 区间 74%–97%），hit@4 <b>30/30</b>（89%–100%）</div></li>
-          <li><div class="nd"><b>离题能拒</b>：15 道跟手册无关的题，硬答 <b>0/15</b>（只能说硬答率上界约 20%，不能说「没有」）</div></li>
+          <li><div class="nd"><b>离题能拒</b>：15 道跟手册无关的题，硬答 <b>0/15</b>。离题 15 题：13 道拒答，2 道降成低置信（给最接近原文并提示），0 道硬答（以现在 <span class="mono">ask()</span> 重新落档为准，和高/低/拒 0/2/13 一致）。只能说硬答率上界约 20%，不能说「没有」</div></li>
+          <li><div class="nd"><b>低置信的代价</b>：27 条检索正确的正例里，5 条（约 19%）被降成低置信。三档是用「少答错」换「多提示」</div></li>
           <li><div class="nd"><b>话题内缺失拒不掉</b>：15 道「话题在手册里、这件事没写」的题，<b>11/15</b> 落在高置信档照常作答（95% 区间 48%–89%）。这是最危险的失效方式：看起来像答案，其实答错</div></li>
           <li><div class="nd"><span class="bad">负面结果</span>单靠一个分数阈值判「有没有依据」，在这份手册上<b>不成立</b>：门槛 0.02 几乎全放行，分差规则在留出测试里误拒一半正例。这条负面结果比一个漂亮阈值更有价值</div></li>
           <li><div class="nd"><span class="bad">冻结测试 v1：已用于诊断</span>这 60 题已经跑过两次，结果也看过了，<b>它已经不是没见过的测试集</b>，现在只能当回归对照。题是 AI 助手写的，不算独立的人写的测试。要再说「冻结测试」，得另写一份 v2</div></li>
@@ -597,7 +598,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
           <li><div class="nd"><b>11-14 19:49 / 19:58</b> <span class="mono">3a31e7d</span> 信号体检 <span class="mono">signal_auc.py</span>；<span class="mono">2342242</span> 收下 AI 助手写的第二份 <span class="mono">signal_auc_claude.py</span></div></li>
           <li><div class="nd"><b>11-14 20:13:36</b> 冻结测试<b>第 1 次运行</b>（<span class="mono">frozen_result.json</span> 里的 <span class="mono">run_at</span>）。代码是旧切分；当时 <span class="mono">ask()</span> 里<b>还没有三档</b>，三档是 <span class="mono">run_frozen_test.py</span> 按配置在脚本里算的</div></li>
           <li><div class="nd"><b>11-14 20:13:58</b> <span class="mono">2d7493c</span> 题集、阈值配置、运行脚本、定阈值脚本和第 1 次结果<b>在同一个提交里第一次入库</b>（<span class="mono">frozen_testset.json</span>、<span class="mono">frozen_config.json</span>、<span class="mono">run_frozen_test.py</span>、<span class="mono">experiments/dev_thresholds.py</span>、<span class="mono">frozen_result.json</span>）</div></li>
-          <li><div class="nd"><b>11-14 20:52:06</b> 冻结测试<b>第 2 次运行</b>：<span class="mono">--force</span> 重跑，结果自带 <span class="mono">rerun: true</span>、<span class="mono">run_count: 2</span>；代码已是新切分</div></li>
+          <li><div class="nd"><b>11-14 20:52:06</b> 冻结测试<b>第 2 次运行</b>：<span class="mono">--force</span> 重跑，结果自带 <span class="mono">rerun: true</span>、<span class="mono">run_count: 2</span>。注：第 2 次运行（20:52:06）早于新切分的提交（7dcf517，20:53:35），运行时代码尚未提交；已用两个提交各重跑一次，逐项一致。以后由脚本记录提交号和未提交状态。</div></li>
           <li><div class="nd"><b>11-14 20:53:35</b> <span class="mono">7dcf517</span> 切分改成「条→句」两级；把<b>配置里同一组阈值</b>写进 <span class="mono">ask()</span>（<span class="mono">TIER_HIGH = 2</span>、<span class="mono">TIER_MEDIUM = 1</span>），低置信改为「给最接近原文并提示」；加 4 个对照脚本（<span class="mono">tier_sim / tier_rule_try / tier_report / frozen_tier_check</span>）；第 2 次结果覆盖了 <span class="mono">frozen_result.json</span></div></li>
           <li><div class="nd"><b>11-15 13:02</b> <span class="mono">93de982</span> 按评审把冻结集改标「v1：已用于诊断」，补切分器版本和数字口径</div></li>
           <li>
@@ -626,7 +627,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
           <li><div class="nd"><b>阈值怎么定的</b>：规则是「信号选开发集上对难负例 AUC 最高的 matched（0.87）；低档 = 留出正例 matched 的 10% 分位；高档 = 开发集负例 matched 的最大值」，得到低档 <span class="mono">≥1</span>、高档 <span class="mono">≥2</span>。用 <span class="mono">dev_thresholds.py</span> 在旧切分（2d7493c）和新切分（93de982）下各重跑一次，都得到 1 和 2</div></li>
           <li><div class="nd"><span class="bad">预先登记验证不了</span>题集、配置和第 1 次结果<b>都是在 2d7493c（20:13:58）这一个提交里第一次入库</b>，配置并不早于结果，git 历史证明不了「阈值在看分数之前写定」。配置文件里自填的 <span class="mono">frozen_at</span> 是 <span class="mono">20:25</span>，反而晚于第 1 次运行的 <span class="mono">20:13:36</span>，这个字段对不上，不能当证据。能验证的只有一点：两次结果里记的题集和配置哈希，和仓库现在的文件一致，说明跑过之后题和阈值没再改</div></li>
           <li><div class="nd"><b>第 1 次原始结果还在</b>：见提交 <span class="mono">2d7493c</span> 里的 <span class="mono">frozen_result.json</span>（<span class="mono">run_count: 1</span>、<span class="mono">rerun: false</span>）。工作区里的文件被第 2 次 <span class="mono">--force</span> 覆盖了，但 git 历史留着。里面话题内缺失的 top1 AUC <span class="mono">0.5457</span>、分差 <span class="mono">0.6173</span>，就是之前写的 0.55、0.62。在 2d7493c 和 93de982 两个版本下各重跑一次，分别和第 1、2 次结果逐项一致</div></li>
-          <li><div class="nd"><b>三档结果</b>（两次计数完全一样）：正例（检索正确的 27 条）高置信 22、低置信 5、<b>误拒 0</b>；离题<b>硬答 0/15</b>；话题内缺失<b>硬答 11/15</b></div></li>
+          <li><div class="nd"><b>三档结果</b>（两次计数完全一样）：正例（检索正确的 27 条）高置信 22、低置信 5、<b>误拒 0</b>；离题<b>硬答 0/15</b>。离题 15 题：13 道拒答，2 道降成低置信（给最接近原文并提示），0 道硬答。话题内缺失<b>硬答 11/15</b>。代价：27 条检索正确的正例里，5 条（约 19%）被降成低置信。三档是用「少答错」换「多提示」</div></li>
           <li><div class="nd"><b>各信号 AUC · 离题</b>：top1 <span class="mono">0.98</span>、分差 <span class="mono">0.99</span>、覆盖率 <span class="mono">0.99</span>、命中词数 <span class="mono">0.99</span>，几乎全分得开</div></li>
           <li><div class="nd"><b>各信号 AUC · 话题内缺失</b>（第 2 次，新切分）：覆盖率 <span class="mono">0.77</span> [0.61, 0.91]，top1 <span class="mono">0.54</span>、分差 <span class="mono">0.58</span>、命中词数 <span class="mono">0.59</span> 全部贴着 0.5。第 1 次（旧切分）是覆盖率 0.77、top1 0.55、分差 0.62、命中词数 0.59</div></li>
           <li><div class="nd"><b>选信号这一步本身也过拟合了</b>：在开发集 11 条难负例上按 AUC 最高挑出了命中词数 matched（<span class="mono">0.87</span>，覆盖率 <span class="mono">0.85</span> 第二）；到冻结集 15 条话题内缺失上，matched 掉到 <span class="mono">0.59</span> [0.42, 0.76]，覆盖率只掉到 <span class="mono">0.77</span>。可能的原因：命中词数是<b>绝对计数</b>（问句越长越容易高），覆盖率按问句实词（IDF 加权）的<b>比例</b>归一；在 11 条样本上挑 AUC 最高的那个，本来就容易挑到「碰巧最高」的（赢家诅咒）。<b>这个对照比「硬答 11/15」更值得记住</b></div></li>
@@ -643,7 +644,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
           <li><div class="nd"><b>自带 15 题评测</b>：15 题<b>全 1.00</b>，门禁通过（新旧切法都是），但这是「满分」不是「完美」：15 题全是正样本，测不出拒答失效 <span class="bad">缺陷 #3</span></div></li>
           <li><div class="nd"><b>阈值扫描</b>（<span class="mono">experiments/threshold_scan.py</span>，15 正 + 34 负）：门槛 0.02 下 <b>29/34</b> 个负例能过闸。旧切分（e0f992d）负例最高 <span class="mono">0.2014</span>；新切分（93de982）负例最高 <span class="mono">0.2348</span>，过闸数仍是 29/34</div></li>
           <li><div class="nd"><b>留出测试</b>（a255ac0，旧切分）：门槛 0.02 正例放行 12/12、难负例只拒 3/11；分差 ≥ 0.13 正例只放行 6/12（误拒一半）、难负例拒 8/11。新切分下复跑：分差规则正例放行 7/12、难负例拒 7/11</div></li>
-          <li><div class="nd"><b>开发集负例是 31 条，不是 34 条</b>：<span class="mono">dev_thresholds.py</span> 想把阈值扫描的 34 条也算进来，但它导入的变量名 <span class="mono">NEGATIVES</span> 在 <span class="mono">threshold_scan.py</span> 里不存在（那边叫 <span class="mono">NEGATIVES_A / NEGATIVES_B</span>），出错被静默吞掉，实际只用了难负例 11 + 离题 20 = 31。配置里的说明写成「含 threshold_scan」是错的，31 这个数是对的</div></li>
+          <li><div class="nd"><b>开发集负例是 31 条，不是 34 条</b>：<span class="mono">dev_thresholds.py</span> 原先想把阈值扫描的 34 条也算进来，但它导入的变量名 <span class="mono">NEGATIVES</span> 在 <span class="mono">threshold_scan.py</span> 里不存在（那边叫 <span class="mono">NEGATIVES_A / NEGATIVES_B</span>），出错被静默吞掉，实际只用了难负例 11 + 离题 20 = 31。现已去掉那个假导入，脚本按 31 条的实际口径来写，导入失败会直接报错，载入后打印条数，条数为 0 会停止。配置文件 <span class="mono">frozen_config.json</span> 里「含 threshold_scan」的说明仍是当时的旧字；为了不改配置哈希、保住 v1 核对，那个文件没有改，以本页和脚本注释的更正为准。31 这个数是对的</div></li>
           <li>
             <details class="dp"><summary>方法记录：自带评测 · 留出测试 · 信号体检 · 两份实现互相核对</summary>
               <div class="dpbody">
@@ -691,11 +692,13 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
       <li id="next" class="collapsed">
         <div class="nd lv1 has-kids"><span class="no">06</span><b>局限与下一步</b><span class="val">还没做的</span><i class="chev"></i></div>
         <ul class="kids">
-          <li><div class="nd"><b>冻结测试 v2</b>：找别人写 10–15 条（同学就行），写之前别看这个站和任何分数；信号和阈值在跑之前写进文件并<b>先单独提交</b>，再跑、再提交结果，这样提交顺序能证明「预先登记」</div></li>
+          <li><div class="nd"><b>冻结测试 v2</b>：找别人写 10–15 条（同学就行），写之前别看这个站和任何分数。v1 的离题题偏容易（「红烧肉怎么做才不会太腻」「光合作用的原理是什么」这类，和手册几乎没有字面交集；冻结集里确有这两题）。v2 增加第三组「校园沾边但手册没写」（火锅店、校车、食堂菜价），因为本页的头号例子就是这一类。流程是：同学写题 → <span class="mono">--check</span> 体检 → 单独提交题集和配置 → 再运行 → 再提交结果，这样提交顺序能证明「预先登记」</div></li>
           <li><div class="nd"><b>v2 的候选信号</b>：覆盖率可以作为预先写定的候选之一（理由见第 03 支），阈值用交叉验证选，不再在 11 条样本上挑最高</div></li>
-          <li><div class="nd"><b>运行记录</b>：给 <span class="mono">run_frozen_test.py</span> 加上「记录代码提交号、每次结果单独存一份、<span class="mono">--force</span> 不覆盖」。AI 助手提供过一版这样的改动，<b>还没合进仓库</b>，现在仓库里的脚本仍会覆盖</div></li>
+          <li><div class="nd"><b>运行记录</b>：新版 <span class="mono">run_frozen_test.py</span>（来自 AI 助手 Claude）已合入工作区：每次运行记录代码提交号和未提交改动、结果单独存进 <span class="mono">frozen_runs/</span>、<span class="mono">--force</span> 不再覆盖旧文件，并做预先登记检查（题集和配置必须已经提交且之后没被改过才允许运行）。这份脚本只在本仓库做过 <span class="mono">--check</span> 体检验证，没有在本仓库跑过正式运行或预先登记提交</div></li>
+          <li><div class="nd"><b>脚本载入题目</b>：以前部分脚本在导入失败时会静默当成空列表，已改为导入失败直接报错，并在载入后打印条数；条数为 0 会停止</div></li>
+          <li><div class="nd"><b>已知限制</b>：Claude 提供的脚本，流程测试用的是占位分词，只验证了步骤、没有任何真实分数；提交号、<span class="mono">dirty</span> 标记和预先登记检查，也只在一个临时 git 仓库里测过。本仓库只做过 <span class="mono">--check</span>。占位分词下的任何数字都没有写进本页</div></li>
           <li><div class="nd"><b>词面以外的信号</b>：话题内缺失的题关键词手册里都有，只是那件事没写，词面信号分不开，需要别的办法</div></li>
-          <li><div class="nd"><b>分工</b>：代码、实验脚本、冻结题集和这几个页面的修改，主要是 AI 助手做的；june 负责提出目标、决定改不改、把结果拿给另一个 AI 助手评审。页面里写「我」的地方是第一人称的行文，不代表每一步都是 june 亲手做的；面试时只讲自己真做过、讲得清的部分</div></li>
+          <li><div class="nd"><b>分工</b>：代码、实验脚本、冻结题集和这几个页面的修改，主要是 AI 助手做的；june 负责提出目标、决定改不改、把结果拿给另一个 AI 助手评审。页面里写「我」的地方是第一人称的行文，不代表每一步都是 june 亲手做的</div></li>
         </ul>
       </li>
 
