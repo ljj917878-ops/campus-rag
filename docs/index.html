@@ -517,12 +517,17 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
 </style>
 
   <link rel="prefetch" href="code.html">
+<style>
+  /* 窄屏/触屏：正文里的链接把可点区域撑到 ≥44px 高，排版不变 */
+  @media (max-width: 760px), (pointer: coarse){ .nd a, .note a{display:inline-block;padding:10px 2px;margin:-10px -2px} }
+</style>
 </head>
 <body>
 <div class="site-head"><div class="bar">
   <a class="brand" href="index.html"><i></i>CampusRAG 一页看懂<small>全部内容都在这一张图里</small></a>
   <nav class="site-nav">
     <a href="index.html" class="on">一张图看全</a>
+    <a href="eval.html">评测复盘</a>
     <a href="code.html">代码详解</a>
   </nav>
   <button class="theme-toggle" type="button" role="switch" aria-checked="false" aria-label="切换到浅色模式" title="切换到浅色模式">
@@ -619,7 +624,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
           <li><div class="nd"><b>280</b> 拍定的默认值，无标定；12 段里只有 3 段超过它，9 段整段通过</div></li>
           <li><div class="nd"><b>60</b> 是重叠的<b>上限</b>（280 的 21%，拍定的）。新切法只拿整条/整句去重叠，而这份手册被切开的 3 段里，块尾那条都长于 60 字、放不进去——<b>实测 15 块之间一处重叠都没有</b>：共 2647 字符，比 12 段正文合计 2650 还少 3（块首尾去了空白）。旧的按字硬切是 2830（约 180 字是重复）。所以在这份手册上，60 现在实际不起作用</div></li>
           <li><div class="nd"><b>4</b> 折中：取 1 怕漏、取 15 等于没检索。4 块最多 <span class="mono">1028</span> 字（最长 4 块相加，这是<b>上限</b>）；平均块长 176，4 块约 700 字，自带 15 题实测平均 <span class="mono">750</span> 字（568–959）</div></li>
-          <li><div class="nd"><b>0.02</b> 没标定过，<b>几乎什么都放行</b>：34 个负例里 29 个能过闸（现在的切法下最高 0.2348；旧切法下 0.2014）</div></li>
+          <li><div class="nd"><b>0.02</b> 没标定过，<b>几乎什么都放行</b>：34 个负例里 29 个能过闸。两种切法下都是 29/34：旧切法（e0f992d）负例最高 <span class="mono">0.2014</span>；新切法（93de982 复跑）负例最高 <span class="mono">0.2348</span></div></li>
           <li>
             <details class="dp"><summary>实测：把 280 改成 120 / 180 / 420 会怎样（含新旧两种切法）</summary>
               <div class="dpbody">
@@ -657,64 +662,20 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
           <li><div class="nd">为什么火锅能得 0.0879：6 个词里只有「学校」在词表，三张卡片都含它</div></li>
           <li><div class="nd">单看分数分不开：34 个负例最高 <span class="mono">0.2014</span>，正例最低 <span class="mono">0.1852</span>——<b>区间是重叠的</b></div></li>
           <li><div class="nd">换成看「top1 减 top2 的分差」，这批样本里两类分开了，<b>但间隔只有 0.015</b>（负例最大 <span class="mono">0.1205</span>，正例最小 <span class="mono">0.1353</span>），而且这条线是在同一批样本上找出来的，<b>没在新问题上验证过</b>（以上几条都是旧切法下测的）</div></li>
-          <li><div class="nd">去验证了（见 05 支的留出测试）：<b>没通过</b>——12 个换问法的正例被误拒 6 个。所以「分差」不能说成结论，只能说「训练样本上成立、留出集上不成立」</div></li>
+          <li><div class="nd">去验证了（见<a href="eval.html?open=04">评测复盘 · 留出测试</a>）：<b>没通过</b>——12 个换问法的正例被误拒 6 个。所以「分差」不能说成结论，只能说「训练样本上成立、留出集上不成立」</div></li>
           <li><div class="nd">换成现在的「条→句」切法（7dcf517）复跑 <span class="mono">threshold_scan.py</span>：留校那题 top1 <span class="mono">0.470</span>、火锅 <span class="mono">0.0876</span>；34 个负例最高 <span class="mono">0.2348</span>、正例最低 <span class="mono">0.1933</span>，仍然重叠；<b>分差连训练样本都分不开了</b>（负例最大 <span class="mono">0.1904</span> &gt; 正例最小 <span class="mono">0.1419</span>）——那条 0.015 的间隔本来就是巧合</div></li>
         </ul>
       </li>
 
       <!-- ⑤ 评测 -->
       <li class="collapsed">
-        <div class="nd lv1 has-kids"><span class="no">05</span><b>怎么判断它好坏</b><span class="val">结论 · 冻结测试 v1 · 方法</span><i class="chev"></i></div>
-        <ul class="kids"><li><div class="nd"><b>一句话结论</b>：它<u>能拒「跟手册无关」的问题</u>，但<u>拒不了「话题在手册里、这件事没写」</u>——后者会答得像模像样却是错的。下面先放结果，怎么做的折叠在最后。</div></li>
-          <li><div class="nd"><span class="bad">冻结测试 v1：已用于诊断</span>60 题（30 正例 + 15 离题 + 15「话题在手册里、这件事没写」）已经跑过两次，我看过结果、并据此改了三档判定——<b>它已经不是没见过的测试集</b>，现在只能当回归对照。要再说「冻结测试」，得另写一份 v2，最好由别人来写（不是我，也不是同一个 AI 助手）</div></li>
-          <li><div class="nd">检索：hit@1 <b>27/30</b>（95% 区间 74%–97%），hit@4 <b>30/30</b>（89%–100%）——检索本身是稳的</div></li>
-          <li><div class="nd">三档结果：正例（检索正确的 27 条）高置信 22、低置信 5、<b>误拒 0</b>；离题负例<b>硬答 0/15</b>；话题内缺失负例<b>硬答 11/15</b>（95% 区间 48%–89%）</div></li>
-          <li><div class="nd">各信号 AUC · 对<b>离题</b>：top1 <span class="mono">0.98</span>、分差 <span class="mono">0.99</span>、覆盖率 <span class="mono">0.99</span>、命中词数 <span class="mono">0.99</span>——几乎全分得开</div></li>
-          <li><div class="nd">各信号 AUC · 对<b>话题内缺失</b>：只有覆盖率 <span class="mono">0.77</span> [0.61, 0.91] 还看得出一点，top1 <span class="mono">0.54</span>、分差 <span class="mono">0.58</span>、命中词数 <span class="mono">0.59</span> 全部贴着 0.5（取自 <span class="mono">frozen_result.json</span> 现存的第 2 次运行，新切分；第 1 次旧切分是 top1 0.55、分差 0.62，三档计数两次完全一样）</div></li>
-          <li><div class="nd"><b>选信号这一步本身也过拟合了</b>：在开发集 11 条难负例上按 AUC 最高挑出了命中词数 matched（<span class="mono">0.87</span>，覆盖率 <span class="mono">0.85</span> 第二）；到冻结集 15 条话题内缺失上，matched 掉到 <span class="mono">0.59</span> [0.42, 0.76]，覆盖率只掉到 <span class="mono">0.77</span>，成了唯一区间下界高于 0.5 的信号。可能的原因：命中词数是<b>绝对计数</b>（问句越长越容易高），覆盖率按问句实词（IDF 加权）的<b>比例</b>归一；而在 11 条样本上挑 AUC 最高的那个，本来就容易挑到「碰巧最高」的——赢家诅咒。<b>这个对照比「硬答 11/15」更值得记住</b></div></li>
-          <li><div class="nd">写结果时的口径：15 条一组里 0 次硬答错，只能说<b>上界约 20%</b>，不能说「没有」；30 条全过只能说<b>下界约 89%</b></div></li>
-          <li><div class="nd"><b>三档判定（2026-11-14 上线，7dcf517）</b>：问句实词在 top1 卡片里只命中 1 个 → 降成「低置信：给最接近原文 + 说清没直接写」，命中 0 个才拒答。开发集难负例落进高置信档的从 8/11 降到 1/11（开发集上的数，不算证据）；但拿同一批冻结题回归，话题内缺失仍有 <b>11/15</b> 落在高置信档——这些题的关键词手册里都有，只是那件事没写，词面信号分不开</div></li>
-<li><div class="nd"><span class="bad">结论</span>单靠一个分数阈值判「有没有依据」，在这份手册上<b>不成立</b>——要么全放行、要么误拒一半。<b>这条负面结果比一个漂亮阈值更有价值</b>。三档判定已经上线：<b>离题的能拒（冻结题 0/15 硬答），话题内缺失的还拒不掉（11/15 仍在高置信档）</b>，这正是最危险的失效方式——给出一个看起来很像答案、其实答错的东西。下一步：另找人写冻结测试 v2，阈值用交叉验证选，再考虑词面以外的信号</div></li>
-          <li><div class="nd"><b>这些数字在哪个版本下跑的</b>：留出测试（a255ac0）、信号体检（3a31e7d、2342242）、冻结测试第 1 次（2d7493c）都在<b>旧切分</b>下（rag_engine.py 为初版 dd61b25）；7dcf517 换成「条→句」切分，冻结集又跑了第 2 次。<span class="mono">frozen_result.json</span> 只记了题集和配置的哈希，没记代码提交号</div></li>
-          <li>
-            <details class="dp"><summary>方法记录：自带评测 · 留出测试 · 信号体检 · 两份实现互相核对 · 冻结测试怎么做的</summary>
-              <div class="dpbody">
-                <p><b>自带 15 题评测</b></p>
-                <ul>
-                  <li>四个指标门槛：关键词 <span class="mono">0.60</span> / 忠实度 <span class="mono">0.70</span> / 检索 <span class="mono">0.70</span> / 综合 <span class="mono">0.65</span> <code>evaluation.py:17-21</code>；综合 = 0.4×关键词 + 0.35×忠实度 + 0.25×检索 <code>:255</code></li>
-                  <li>实测：15 题<b>全 1.00</b>，门禁通过（新旧切法都是）——但这是「满分」不是「完美」</li>
-                  <li><span class="bad">缺陷 #3</span> 15 题<b>全是正样本</b>，没有一道「手册里没有」的题，所以测不出拒答失效</li>
-                  <li>忠实度算法：每句任取 <b>8 字滑窗</b>命中上下文即算有依据 → 抽取式答案<b>几乎必然 1.00</b>，指标无区分度</li>
-                </ul>
-                <p><b>留出测试</b>（<span class="mono">heldout_check.py</span>，旧切分）：12 条换了问法的正例 + 11 条「话题在手册里、这件事没写」的难负例</p>
-                <ul>
-                  <li>规则 A（门槛 0.02）：正例放行 <b>12/12</b>，难负例只拒 <b>3/11</b> → 几乎不拒答</li>
-                  <li>规则 B（分差 ≥ 0.13）：正例只放行 <b>6/12</b>（误拒一半），难负例拒 <b>8/11</b> → 误拒太狠</li>
-                  <li>规则 B 误拒的 6 条里，<b>1 条</b>是 top1 与 top2 文本重叠（旧切法的 60 字重叠区）造成的；剩下 5 条是换问法后字面重合度下降</li>
-                  <li>新切法下复跑：规则 A 不变；规则 B 正例放行 7/12、难负例拒 7/11，误拒的 5 条都与重叠无关（现在没有重叠）</li>
-                </ul>
-                <p><b>信号体检</b>（<span class="mono">signal_auc.py</span>，旧切分）：先不选方案，逐个信号算 AUC——随机取一个正例和一个负例，正例分数更高的概率，0.5 等于瞎猜</p>
-                <ul>
-                  <li>对<b>离题</b>负例：分差 <span class="mono">0.917</span>、top1 <span class="mono">0.887</span>、命中词数 <span class="mono">0.881</span> → 离题问题能分</li>
-                  <li>对<b>话题内缺失</b>的难负例（校医院周末开不开门）：全掉下来——命中词数 <span class="mono">0.875</span>、覆盖率 <span class="mono">0.826</span>、IDF 覆盖率 <span class="mono">0.795</span>、top1 <span class="mono">0.739</span>、分差 <span class="mono">0.723</span>，置信区间都很宽（约 <span class="mono">±0.2</span>）</li>
-                </ul>
-                <p><b>两份实现互相核对</b>：第二份 <span class="mono">signal_auc_claude.py</span> 是 AI 助手（Claude）在评审时写的，信号定义与自助区间各写各的；但它和第一份出自同一轮讨论、思路同源，<b>不算独立复现</b>。结论和排序一致，数字略有出入</p>
-                <ul>
-                  <li>对<b>离题</b>负例：覆盖率 <span class="mono">0.95</span>、分差 <span class="mono">0.94</span>、top1 <span class="mono">0.91</span>、命中词数 <span class="mono">0.88</span></li>
-                  <li>对<b>话题内缺失</b>：命中词数 <span class="mono">0.87</span>、覆盖率 <span class="mono">0.85</span>、top1 <span class="mono">0.77</span>、分差 <span class="mono">0.76</span>——全线比离题低 0.1 左右</li>
-                  <li>「分差在难负例上的 AUC」两份脚本分别是 <span class="mono">0.723</span>（signal_auc.py）和 <span class="mono">0.76</span>（signal_auc_claude.py）：差在正例口径——前者用全部 12 条留出正例，后者只用 top1 检索正确的 11 条。下面三个数字都取后者，口径一致</li>
-                  <li><b>过拟合陷阱的教科书样本</b>（同一脚本、同一批信号）：拿<b>训练正例</b>对离题负例算，分差 AUC = <span class="mono">1.00</span>；换成留出正例，掉到 <span class="mono">0.94</span>；再换到话题内缺失负例，只剩 <span class="mono">0.76</span>。<b>同一套代码，三个数字 = 0.76 / 0.94 / 1.00，取决于你拿谁去算。</b>词面信号分不开「同义词」和「真没写」，这不是调参能解决的</li>
-                </ul>
-                <p><b>冻结测试 v1 怎么做的</b></p>
-                <ul>
-                  <li>60 题由 AI 助手（Claude）只依据手册原文写，写题时没看过我的样本和分数（<span class="mono">frozen_testset.json</span> + <span class="mono">run_frozen_test.py</span>）。但出题人是 AI、照着手册写，和手册、和我的开发题写法同源，<b>不能算独立的人写的测试</b>。跑之前先 <span class="mono">--check</span> 体检——正例关键词都在手册里、缺失类的关键词都不在、与已有 60 题无重复，通过</li>
-                  <li>阈值在<b>看分数之前</b>就写定（<span class="mono">frozen_config.json</span>）：信号选开发集上对难负例 AUC 最高的 <span class="mono">matched</span>（0.87），低档 <span class="mono">≥1</span>、高档 <span class="mono">≥2</span>，规则与数字都写进文件，没做搜索</li>
-                  <li>体检之外我人工过了一遍那 15 条缺失负例：<span class="mono">M07</span>「调换宿舍床位要提前几天申请」最边缘（第十五条只写「不得擅自调换」），保留原题但在结果里标注，没有改动</li>
-                  <li>第 2 次运行是 <span class="mono">--force</span> 重跑，脚本自己就会标 <span class="mono">rerun</span>、提示「不能再叫冻结测试」——这也是上面改叫「v1：已用于诊断」的原因</li>
-                </ul>
-              </div>
-            </details>
-          </li>
+        <div class="nd lv1 has-kids"><span class="no">05</span><b>怎么判断它好坏</b><span class="val">摘要 · 详细见评测复盘</span><i class="chev"></i></div>
+        <ul class="kids">
+          <li><div class="nd"><b>一句话结论</b><span>它<u>能拒「跟手册无关」的问题</u>，但<u>拒不了「话题在手册里、这件事没写」</u>，后者会答得像模像样却是错的</span></div></li>
+          <li><div class="nd"><b>找得准</b><span>60 道测试题里的 30 道正常问题，正确的那段手册 27 次排第一、30 次都进了前四（hit@1 27/30，hit@4 30/30）</span></div></li>
+          <li><div class="nd"><b>拒得了离题，拒不了缺失</b><span>15 道跟手册无关的题，0 道硬答；15 道「手册没写这件事」的题，11 道照常作答</span></div></li>
+          <li><div class="nd"><b>老实说</b><span>这 60 题是 AI 助手写的、已经跑过两次，只能当回归对照（「冻结测试 v1：已用于诊断」）；单靠一个分数阈值走不通，三档判定已上线，只算部分缓解</span></div></li>
+          <li><div class="nd"><b>详细见</b><a href="eval.html">评测复盘页</a><span>完整过程、时间线、每个数的提交号都在那里</span></div></li>
         </ul>
       </li>
 
@@ -723,7 +684,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
         <div class="nd lv1 has-kids"><span class="no">06</span><b>三处真缺陷</b><span class="val">都有证据</span><i class="chev"></i></div>
         <ul class="kids">
           <li><div class="nd"><span class="bad">#1 已修</span>原来按字符硬切、不看标点（<code>chunk-004</code> 的章节名变成「。」）；2026-11-14 改成「先分条、再分句」，切点只落在条与句之间，评测 15 题仍全 1.00</div></li>
-          <li><div class="nd"><span class="bad">#2 部分缓解</span>门槛 0.02 几乎什么都放行（34 个负例放走 <b>29</b> 个）；绝对分数调到最优 <span class="mono">0.18</span> 仍漏 1 个；换成分差（top1−top2 ≥ 0.13）在训练样本上能全分开，<b>但留出测试里误拒了一半正例</b>（以上为旧切法）。2026-11-14 上线三档判定（7dcf517）后：离题能拒（冻结题 0/15 硬答），但话题内缺失仍有 <b>11/15</b> 落在高置信档——所以只算<b>部分缓解</b></div></li>
+          <li><div class="nd"><span class="bad">#2 部分缓解</span>门槛 0.02 几乎什么都放行（34 个负例放走 <b>29</b> 个，新旧切法都是）；绝对分数调到最优 <span class="mono">0.18</span> 仍漏 1 个；换成分差（top1−top2 ≥ 0.13）在训练样本上能全分开，<b>但留出测试里误拒了一半正例</b>（以上为旧切法）。2026-11-14 上线三档判定（7dcf517）后：离题能拒（冻结题 0/15 硬答），但话题内缺失仍有 <b>11/15</b> 落在高置信档——所以只算<b>部分缓解</b></div></li>
           <li><div class="nd"><span class="bad">#3</span>评测集全正例 + 忠实度无区分度，导致前两个缺陷测不出来</div></li>
           <li><div class="nd"><b>三者串起来</b>：切坏 → 门槛虚设 → 评测还测不出 = 系统会一本正经答错，且没人报警</div></li>
           <li><div class="nd">怎么交代（<b>只说真做过的</b>）：「这套的 15 题是项目自带的，我先把它跑通复现了满分，然后自己加了 34 个手册里没有的问题去打，才发现门禁测不出拒答失效」</div></li>
@@ -732,7 +693,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
 
       <!-- ⑦ 术语 -->
       <li class="collapsed">
-        <div class="nd lv1 has-kids"><span class="no">07</span><b>十个词</b><span class="val">整站只解释一次</span><i class="chev"></i></div>
+        <div class="nd lv1 has-kids"><span class="no">07</span><b>术语表</b><span class="val">整站只解释一次</span><i class="chev"></i></div>
         <ul class="kids">
           <li><div class="nd"><b>RAG</b> 先翻资料再回答，不是凭记忆瞎答</div></li>
           <li><div class="nd"><b>chunk 切段</b> 把长文档切成小卡片，本项目 15 张</div></li>
@@ -744,6 +705,11 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
           <li><div class="nd"><b>抽取式</b> 抄原文句子拼答案</div></li>
           <li><div class="nd"><b>生成式</b> 交给大模型改写；没 Key 自动退回抽取式</div></li>
           <li><div class="nd"><b>引用 citation</b> 答案末尾标「依据：campus_handbook-007」</div></li>
+          <li><div class="nd"><b>hit@k</b> 正确的那张卡片有没有排进前 k 张；hit@1 = 排第一，hit@4 = 进了前四</div></li>
+          <li><div class="nd"><b>AUC</b> 随便抽一个正例、一个负例，正例分数更高的概率；1 = 全分得开，0.5 = 跟瞎猜一样</div></li>
+          <li><div class="nd"><b>置信区间</b> 题少时数字不稳，给一个「真实值大概在这里」的范围（本站用 95%）；区间越宽，说明题越不够</div></li>
+          <li><div class="nd"><b>硬答</b> 手册里其实没有依据，系统却照常给出答案，没有拒答</div></li>
+          <li><div class="nd"><b>高置信</b> 三档里最高的一档：问句实词在最相关卡片里命中 ≥2 个，照常作答；命中 1 个是「低置信」（给最接近原文并提示没直接写），0 个拒答</div></li>
         </ul>
       </li>
 
@@ -795,9 +761,9 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
           <li><div class="nd">4. 先判最高分够不够，不够就拒答，不硬凑</div></li>
           <li><div class="nd">5. 够了就从原句里挑，拼成答案 + 章节出处</div></li>
           <li><div class="nd"><b>先把来路说清楚</b>：「原型是 AI 工具给我的，我没有直接用——先读懂、画了流程图，然后自己去验证它的问题」</div></li>
-          <li><div class="nd"><b>再说你做过什么</b>：跑通评测复现满分、写脚本扫切块大小、加了 34 个负例把拒答问题逼出来</div></li>
+          <li><div class="nd"><b>再说你做过什么</b>：只讲自己真做过的。这个项目的代码、脚本和评测主要是 AI 助手写的，你负责定目标、判断结果、决定改不改；可以讲你怎么发现「自带评测全是正样本、测不出拒答」并让它补上负例</div></li>
           <li><div class="nd"><b>这段只记关键词，别背原句</b>：切分 → 建索引 → 检索 → 判门槛 → 抽原文 → 标出处</div></li>
-          <li><div class="nd">被深聊就接：<b>「这套的短板我清楚：自带评测全是正样本，测不出拒答失效；我自己加了 34 个负例才把它逼出来，还做了留出测试，结果分差规则没通过」</b>——前提是你真跑过 <span class="mono">experiments\negative_probe.py</span></div></li>
+          <li><div class="nd">被深聊就接：<b>「这套的短板我清楚：自带评测全是正样本，测不出拒答失效；后来补了 34 个负例才把它逼出来，又做了留出测试，结果分差规则没通过。脚本是 AI 助手写的，结论我核对过」</b>——前提是你自己跑过、看懂了 <span class="mono">experiments\negative_probe.py</span></div></li>
         </ul>
       </li>
 
@@ -805,7 +771,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
   </div>
 
   <div class="note" style="margin-top:26px">
-    这一页现在是主站：全部内容都在树里。<b>只有代码逐行批注</b>还单独一页（树状布局放不下左右对照的代码），顶栏第二个入口就是它。
+    这一页现在是主站：主要内容都在树里。<b>评测复盘</b>（05 支的完整过程）和<b>代码逐行批注</b>各单独一页，顶栏第二、三个入口就是。
     旧的 Surge 站（campusrag-jietu-june.surge.sh）暂时还在，但以后以这里为准。
   </div>
 </div>

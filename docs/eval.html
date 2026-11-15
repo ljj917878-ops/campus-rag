@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<script>(function(){try{var q=new URLSearchParams(location.search).get("theme");var t=(location.hash==="#light"||location.hash==="#shot-light"||q==="light")?"light":(location.hash==="#dark"||q==="dark")?"dark":localStorage.getItem("campusrag-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);document.documentElement.style.colorScheme=t;}}catch(e){}})();</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CampusRAG · 评测复盘</title>
+<link rel="stylesheet" href="assets/site.css?v=20261114f">
+<link rel="stylesheet" href="assets/fx.css?v=21">
+<link rel="stylesheet" href="assets/vendor/lenis/lenis.css?v=21">
+<style>
+  /* ── 顶部数字条 ───────────────────────── */
+  .flowbar{display:flex;align-items:stretch;gap:0;background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);margin:18px 0 6px}
+  .flowbar .cell{flex:1 1 0;padding:13px 10px;text-align:center;border-right:1px solid var(--line-2);position:relative}
+  .flowbar .cell:last-child{border-right:0}
+  .flowbar .k{display:block;font-size:11.5px;color:var(--dim-2);letter-spacing:.04em;margin-bottom:2px}
+  .flowbar .v{font-family:var(--mono);font-size:17px;color:var(--green);font-weight:600;line-height:1.2}
+  .flowbar .cell::after{content:"›";position:absolute;right:-6px;top:50%;transform:translateY(-50%);color:#3d4c5b;font-size:15px;z-index:1}
+  .flowbar .cell:last-child::after{content:""}
+
+  /* ── 主干节点条 ───────────────────────── */
+  .rail{display:flex;gap:0;flex-wrap:nowrap;overflow-x:auto;padding:16px 2px 6px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+  .rail::-webkit-scrollbar{height:6px}
+  .rail::-webkit-scrollbar-thumb{background:#dcdcd2;border-radius:3px}
+  .rail .node{
+    flex:0 0 auto;appearance:none;cursor:pointer;font-family:inherit;
+    background:var(--card);border:1.5px solid var(--line);border-radius:12px;
+    padding:9px 11px 8px;min-width:106px;text-align:left;transition:.15s;position:relative;
+    display:flex;flex-direction:column;gap:1px;
+  }
+  .rail .node:hover{border-color:var(--green-line);transform:translateY(-1px)}
+  .rail .node .n{font-family:var(--mono);font-size:11.5px;color:var(--dim-2)}
+  .rail .node .t{font-size:14.5px;font-weight:600;color:var(--ink);white-space:nowrap}
+  .rail .node .s{font-size:11.5px;color:var(--dim);font-family:var(--mono);white-space:nowrap}
+  .rail .node[aria-selected="true"]{border-color:var(--green);background:var(--green);box-shadow:0 6px 16px -10px rgba(29,92,63,.9)}
+  .rail .node[aria-selected="true"] .t{color:#fff}
+  .rail .node[aria-selected="true"] .n,.rail .node[aria-selected="true"] .s{color:#c8e3d2}
+  .conn{flex:0 0 20px;display:flex;align-items:center;justify-content:center;color:#3d4c5b;font-size:15px}
+
+  /* ── 详情面板 ─────────────────────────── */
+  .detail{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;box-shadow:var(--shadow);margin-top:12px}
+  .detail .head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+  .detail .badge{font-family:var(--mono);font-size:12px;background:var(--green-soft);color:var(--green);border:1px solid var(--green-line);border-radius:6px;padding:2px 8px}
+  .detail h3{font-size:19px;margin:0}
+  .detail .oneline{color:var(--dim);font-size:15px;margin:4px 0 14px}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .kv{background:var(--bg-2);border:1px solid var(--line-2);border-radius:10px;padding:11px 13px}
+  .kv .k{font-size:11.5px;color:var(--dim-2);letter-spacing:.05em;display:block;margin-bottom:3px}
+  .kv .v{font-size:14.5px;color:var(--ink-2)}
+  .kv .v.code{font-family:var(--mono);font-size:13px;color:var(--green)}
+  .detail .why{margin-top:12px}
+
+  /* ── 旅程对照 ─────────────────────────── */
+  .two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:14px 0}
+  .journey{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow)}
+  .journey.bad{border-color:var(--amber-line);background:linear-gradient(180deg,#1d1611,#161d25)}
+  .journey h4{margin:0 0 4px;font-size:15px}
+  .journey .q{font-size:14.5px;color:var(--dim);margin:0 0 12px;font-family:var(--mono)}
+  .track2{display:flex;flex-direction:column;gap:0}
+  .track2 .t{display:flex;gap:9px;align-items:flex-start;font-size:14px;color:var(--ink-2);padding:5px 0}
+  .track2 .t i{flex:0 0 18px;height:18px;border-radius:50%;background:var(--green-soft);color:var(--green);font-size:11px;font-style:normal;display:flex;align-items:center;justify-content:center;margin-top:2px}
+  .journey.bad .track2 .t i{background:rgba(242,160,106,.16);color:var(--amber)}
+  .track2 .t b{color:var(--ink)}
+  .res{margin-top:10px;padding:9px 12px;border-radius:9px;font-size:14px;background:var(--green-soft);color:var(--green);font-family:var(--mono)}
+  .journey.bad .res{background:rgba(242,160,106,.14);color:var(--amber)}
+
+  /* ── 文件接力 ─────────────────────────── */
+  .files{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+  .file{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 14px;position:relative}
+  .file .fn2{font-family:var(--mono);font-size:13px;color:var(--green);font-weight:600;display:block;margin-bottom:4px}
+  .file .d{font-size:13.5px;color:var(--dim);line-height:1.6}
+  .file .ln{position:absolute;top:11px;right:12px;font-family:var(--mono);font-size:11px;color:var(--dim-2)}
+
+  /* ── 取舍三卡 ─────────────────────────── */
+  .picks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+  .pick{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+  .pick h4{margin:0 0 6px;font-size:15px}
+  .pick .a{color:var(--green);font-size:13.5px;margin-bottom:6px}
+  .pick .b{color:var(--amber);font-size:13.5px}
+  .pick p{margin:0;font-size:13.8px;color:var(--dim);line-height:1.6}
+
+  @media (max-width:760px){
+    .flowbar{flex-wrap:wrap}
+    .flowbar .cell{flex:1 1 33.333%;border-bottom:1px solid var(--line-2);padding:10px 6px}
+    .flowbar .cell::after{content:""}
+    .flowbar .v{font-size:15px}
+    .grid,.two,.picks{grid-template-columns:1fr}
+    .files{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .detail{padding:16px 15px}
+    .rail .node{min-width:112px;padding:9px 11px 8px}
+    .rail .node .t{font-size:13.5px}
+  }
+/* ── 思维地图 ───────────────────────────────── */
+.mind{--spine:#3d5064;position:relative;margin:22px 0 8px}
+.mind-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:16px 0 4px}
+.mini{cursor:pointer;font-family:inherit;font-size:13px;color:var(--dim);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 13px;transition:.15s}
+.mini:hover{color:var(--green);border-color:var(--green-line);background:var(--green-soft)}
+.mini.on{color:#0a1a12;background:var(--green);border-color:var(--green)}
+.mini-hint{font-size:12.5px;color:var(--dim-2);margin-left:4px}
+
+.mroot{
+  display:inline-flex;flex-direction:column;gap:3px;
+  background:linear-gradient(180deg,#1a2733,#151d25);
+  border:1.5px solid var(--green-line);border-radius:14px;
+  padding:13px 18px;box-shadow:0 0 0 4px rgba(61,220,151,.05);
+}
+.mroot b{font-size:17px}
+.mroot span{font-size:13px;color:var(--dim)}
+.mroot em{font-style:normal;color:var(--green);font-family:var(--mono);font-size:12.5px}
+
+ul.kids{list-style:none;margin:0;padding:0}
+ul.kids > li{position:relative;padding-left:34px}
+ul.kids > li::before{content:"";position:absolute;left:15px;top:0;bottom:0;border-left:1px solid var(--spine)}
+ul.kids > li:last-child::before{bottom:auto;height:26px}
+ul.kids > li::after{content:"";position:absolute;left:15px;top:25px;width:19px;border-top:1px solid var(--spine)}
+ul.kids > li:first-child::before{top:25px}
+
+.nd{
+  display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+  background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:8px 12px;margin:4px 0;font-size:14.8px;color:var(--ink-2);
+  cursor:default;transition:.12s;
+}
+.nd b{color:var(--ink);font-weight:600}
+.nd code{font-size:12.5px;color:var(--green);background:rgba(61,220,151,.08);border:1px solid rgba(61,220,151,.16);padding:1px 6px;border-radius:5px}
+.nd .num{margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--green);white-space:nowrap}
+.nd.lv1{
+  background:linear-gradient(180deg,#18222c,#161d25);border-color:#2e4550;
+  border-left:3px solid var(--green-line);
+  font-size:15.6px;font-weight:600;color:var(--ink);
+  cursor:pointer;padding:10px 14px;margin:7px 0 2px;
+}
+.nd.lv1:hover{border-color:var(--green-line);background:linear-gradient(180deg,#1a2833,#17202a)}
+.nd.lv1 .no{font-family:var(--mono);font-size:12px;color:#0a1a12;background:var(--green);border-radius:6px;padding:1px 7px;font-weight:700}
+.nd.lv1 .val{font-family:var(--mono);font-size:12.5px;color:var(--dim);margin-left:auto;white-space:nowrap}
+.chev{transition:transform .26s cubic-bezier(.22,.8,.24,1);width:8px;height:8px;border-right:2px solid var(--dim-2);border-bottom:2px solid var(--dim-2);transform:rotate(45deg);margin-left:10px;transition:.18s;flex:0 0 auto}
+li.collapsed > .nd.lv1 .chev{transform:rotate(-45deg)}
+li.collapsed > ul.kids{display:none}
+.bad{font-size:12px;color:var(--amber);background:rgba(242,160,106,.12);border:1px solid var(--amber-line);border-radius:999px;padding:1px 8px;white-space:nowrap}
+.ok{font-size:12px;color:var(--green);background:rgba(61,220,151,.12);border:1px solid var(--green-line);border-radius:999px;padding:1px 8px;white-space:nowrap}
+.dp{margin:4px 0}
+.dp > summary{list-style:none;cursor:pointer;font-size:14px;color:var(--ink-2);background:var(--bg-2);border:1px dashed #33414f;border-radius:10px;padding:8px 12px}
+.dp > summary::-webkit-details-marker{display:none}
+.dp > summary::before{content:"▸ ";color:var(--green);font-weight:700}
+.dp[open] > summary::before{content:"▾ "}
+.dp > summary:hover{border-color:var(--green-line);color:var(--ink)}
+.dp .dpbody{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:8px;font-size:14.6px;max-width:640px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0 0;font-size:13px;color:var(--dim-2)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;background:var(--green);margin-right:6px}
+.legend i.amber{background:var(--amber)}
+
+/* 宽屏：真正的横向思维导图（根在左，逐层向右分支） */
+@media (min-width:1280px){
+  .mind{display:flex;align-items:center}
+  .mind > .mroot{flex:0 0 auto;margin-right:36px;position:relative}
+  .mind > ul.kids{position:relative}
+  .mind > ul.kids::before{content:"";position:absolute;left:-36px;top:50%;width:36px;border-top:1px solid var(--spine)}
+  .mind ul.kids{display:flex;flex-direction:column;justify-content:center;flex:0 0 auto}
+  .mind ul.kids > li{display:flex;align-items:center;padding:3px 0 3px 36px}
+  .mind ul.kids > li::before{left:16px;top:0;bottom:0;height:auto;border-left:1px solid var(--spine)}
+  .mind ul.kids > li:first-child::before{top:50%}
+  .mind ul.kids > li:last-child::before{bottom:50%;height:auto}
+  .mind ul.kids > li:only-child::before{display:none}
+  .mind ul.kids > li::after{left:16px;top:50%;width:20px;border-top:1px solid var(--spine)}
+  .mind ul.kids > li:only-child::after{width:20px}
+  .mind .nd{margin:3px 0;flex:0 0 auto;width:440px;max-width:440px}
+  .mind > .mroot::after{content:"";position:absolute;right:-36px;top:50%;width:36px;border-top:1px solid var(--spine);display:none}
+  .mind .dp{flex:0 0 auto}
+  .mind .dp{width:440px}
+  .mind .dp .dpbody{width:440px;max-width:440px}
+  .mind .nd.lv1{margin:3px 0;min-width:172px}
+  .mind .mroot > span{max-width:210px}
+  .mind .dp .dpbody{max-width:560px}
+}
+
+@media (max-width:899px){
+  .mind{display:block}
+  .mind .dp .dpbody{max-width:none}
+}
+@media (max-width:620px){
+  ul.kids > li{padding-left:20px}
+  ul.kids > li::before{left:8px}
+  ul.kids > li::after{left:8px;width:12px;top:20px}
+  ul.kids > li:last-child::before{height:21px}
+  ul.kids > li:first-child::before{top:20px}
+  .nd{font-size:14px;padding:7px 10px}
+  .nd.lv1{font-size:14.6px;padding:9px 11px}
+  .nd .num,.nd.lv1 .val{display:none}
+}
+/* ══════════════════════════════════════════════════════════════
+   质感层（2026-11-14 晚）：毛玻璃 + 连续圆角 + 分层阴影
+   参考 Apple 的视觉语言：半透明材质、柔和的大圆角、极细高光边、
+   悬停时轻微抬起而不是变色跳动。
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --r-lg:24px;
+  --r-md:16px;
+  --r-sm:11px;
+  --glass:rgba(24,33,43,.58);
+  --glass-2:rgba(20,27,36,.72);
+  --glass-3:rgba(16,22,29,.82);
+  --hair:rgba(255,255,255,.07);
+  --hair-2:rgba(255,255,255,.13);
+  --hi:inset 0 1px 0 rgba(255,255,255,.055);
+  --sh-sm:0 1px 1px rgba(0,0,0,.26),0 6px 18px -12px rgba(0,0,0,.66);
+  --sh-md:0 2px 5px rgba(0,0,0,.30),0 20px 48px -26px rgba(0,0,0,.86);
+  --sh-lg:0 4px 10px rgba(0,0,0,.32),0 38px 90px -44px rgba(0,0,0,.92);
+  --ease:cubic-bezier(.22,.8,.24,1);
+}
+@supports (corner-shape:squircle){
+  .nd,.nd.lv1,.mroot,.note,.dp .dpbody,.mini,.site-nav a{border-radius:var(--r-md);corner-shape:squircle}
+  .mroot,.note{border-radius:var(--r-lg)}
+}
+
+html{scroll-behavior:smooth}
+:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+
+/* 背景：顶部一束柔光 + 底部压暗，让毛玻璃有东西可折射 */
+body{
+  background-image:
+    radial-gradient(1200px 520px at 50% -220px,rgba(45,92,120,.30) 0%,rgba(14,18,23,0) 70%),
+    radial-gradient(900px 600px at 88% 118%,rgba(35,78,60,.22) 0%,rgba(14,18,23,0) 72%),
+    radial-gradient(1100px 420px at 50% -200px,#17222c 0%,rgba(14,18,23,0) 72%);
+}
+
+/* 顶栏：更通透的玻璃 + 发丝边 */
+.site-head{
+  background:rgba(12,16,21,.55);
+  backdrop-filter:saturate(180%) blur(22px);
+  -webkit-backdrop-filter:saturate(180%) blur(22px);
+  border-bottom:1px solid var(--hair);
+  box-shadow:0 1px 0 rgba(0,0,0,.5),0 12px 34px -30px rgba(0,0,0,.9);
+}
+.site-nav a{
+  border-radius:999px;padding:7px 15px;
+  transition:background .2s var(--ease),color .2s var(--ease),box-shadow .2s var(--ease);
+}
+.site-nav a.on{
+  background:linear-gradient(180deg,#4ae6a5,#31c986);
+  color:#08160f;border-color:rgba(255,255,255,.18);
+  box-shadow:0 1px 0 rgba(255,255,255,.28) inset,0 6px 18px -10px rgba(61,220,151,.55);
+}
+
+/* 标题区 */
+h1{letter-spacing:-.022em;font-weight:800}
+.kicker{letter-spacing:.16em;color:#4fc98d}
+.sub{color:rgba(207,219,232,.82);max-width:none}
+
+/* 首屏那句 >30 秒看懂< 换成玻璃卡 */
+.note{
+  background:linear-gradient(180deg,rgba(32,46,58,.72),rgba(20,28,37,.72));
+  backdrop-filter:saturate(150%) blur(18px);
+  -webkit-backdrop-filter:saturate(150%) blur(18px);
+  border:1px solid var(--hair-2);
+  border-radius:var(--r-lg);
+  padding:18px 20px;
+  box-shadow:var(--sh-lg),var(--hi);
+}
+
+/* 按钮（入门 / 全部展开 / 只看主干） */
+.mini{
+  background:linear-gradient(180deg,rgba(34,45,57,.9),rgba(23,31,40,.9));
+  border:1px solid var(--hair);box-shadow:var(--sh-sm),var(--hi);
+  transition:transform .2s var(--ease),background .2s var(--ease),border-color .2s var(--ease);
+}
+.mini:hover{transform:translateY(-1px);border-color:var(--hair-2)}
+.mini:active{transform:scale(.985)}
+.mini.on{
+  background:linear-gradient(180deg,#4ae6a5,#31c986);border-color:rgba(255,255,255,.2);color:#08160f;
+  box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 8px 22px -12px rgba(61,220,151,.6);
+}
+
+/* 根节点：材质最厚的一层，带一圈很淡的绿光 */
+.mroot{
+  background:linear-gradient(180deg,rgba(38,55,70,.86),rgba(20,28,37,.9));
+  backdrop-filter:saturate(150%) blur(20px);
+  -webkit-backdrop-filter:saturate(150%) blur(20px);
+  border:1px solid rgba(61,220,151,.34);
+  border-radius:var(--r-lg);
+  padding:16px 22px;
+  box-shadow:var(--sh-lg),var(--hi),0 0 0 5px rgba(61,220,151,.045);
+}
+
+/* 节点：玻璃片 + 抬起 */
+.nd{
+  background:linear-gradient(180deg,rgba(30,41,52,.72),rgba(21,28,37,.86));
+  border:1px solid var(--hair);border-radius:var(--r-md);
+  box-shadow:var(--sh-sm),var(--hi);
+  transition:transform .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease);
+}
+.nd:hover{transform:translateY(-1.5px);border-color:var(--hair-2);box-shadow:var(--sh-md),var(--hi)}
+.nd.lv1{
+  background:linear-gradient(180deg,rgba(34,47,60,.86),rgba(22,29,38,.92));
+  border:1px solid var(--hair);border-left:3px solid rgba(61,220,151,.55);
+  border-radius:var(--r-md);box-shadow:var(--sh-md),var(--hi);
+  padding:11px 16px;
+}
+.nd.lv1:hover{
+  border-color:var(--hair-2);border-left-color:var(--green);
+  box-shadow:var(--sh-lg),var(--hi);
+}
+.nd code{
+  background:rgba(61,220,151,.09);border:1px solid rgba(61,220,151,.18);
+  border-radius:6px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+.nd.lv1 .no{
+  border-radius:7px;box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 4px 12px -8px rgba(61,220,151,.7);
+}
+.bad,.ok{border-radius:999px;box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+
+/* 深挖折叠条与内容 */
+.dp > summary{
+  background:linear-gradient(180deg,rgba(27,36,46,.7),rgba(20,27,36,.8));
+  border:1px dashed rgba(255,255,255,.13);border-radius:var(--r-md);
+  box-shadow:var(--sh-sm);
+  transition:border-color .2s var(--ease),transform .2s var(--ease);
+}
+.dp > summary:hover{transform:translateY(-1px);border-color:rgba(61,220,151,.42)}
+.dp .dpbody{
+  background:linear-gradient(180deg,rgba(28,38,49,.78),rgba(19,26,34,.9));
+  border:1px solid var(--hair);border-radius:var(--r-md);
+  box-shadow:var(--sh-md),var(--hi);
+}
+
+/* 连线：细一点、淡一点，像发丝 */
+.mind{--spine:rgba(255,255,255,.13)}
+
+/* 表格 */
+table.tbl th{background:rgba(255,255,255,.03)}
+table.tbl{border-radius:var(--r-md);overflow:hidden;box-shadow:var(--sh-sm)}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important;animation:none !important}
+  html{scroll-behavior:auto}
+}
+
+/* 调整：节点更实一点、连线更清楚、根节点去掉外圈光晕 */
+.mind{--spine:rgba(255,255,255,.20)}
+.nd{
+  background:linear-gradient(180deg,rgba(34,46,58,.88),rgba(23,31,41,.95));
+  border:1px solid rgba(255,255,255,.085);
+  color:#d9e4f0;
+}
+.nd.lv1{
+  background:linear-gradient(180deg,rgba(40,55,69,.94),rgba(25,33,43,.97));
+  border-left:3px solid rgba(61,220,151,.78);
+}
+.mroot{box-shadow:var(--sh-lg),var(--hi)}
+.mroot{backdrop-filter:saturate(140%) blur(14px);-webkit-backdrop-filter:saturate(140%) blur(14px)}
+
+/* 宽屏时把整棵树居中，别全挤在左边 */
+@media (min-width:1150px){
+  .mind{justify-content:center}
+  h1{font-size:42px;line-height:1.22}
+}
+@media (max-width:1150px){ h1{font-size:31px;line-height:1.28} }
+/* 标题与小标签的呼吸感 */
+.sub{margin-top:10px}
+.kicker{margin-bottom:10px}
+
+/* ── 阅读舒适度（2026-11-14）：这是给我自己看的，宁松勿紧 ── */
+:root{--fs-body:16px}
+body{font-size:var(--fs-body);line-height:1.92;color:#dae5f1;letter-spacing:.012em}
+p,li,.nside,.what,.sub{line-height:1.92}
+h1{line-height:1.28}
+h2{margin-top:2.2em}
+.nd{font-size:14.6px;line-height:1.66}
+.nd .no{font-size:11.5px}
+.mini{font-size:13px;padding:7px 13px}
+.site-foot{line-height:1.9}
+
+/* ── 静音版（2026-11-14）：学 refero 的 token 纪律——平面、细线、单一强调色 ── */
+:root{
+  --bg:#0b0f14;
+  --bg-2:#0f151c;
+  --card:#131a22;
+  --card-2:#161e27;
+  --line:rgba(255,255,255,.065);
+  --line-strong:rgba(255,255,255,.12);
+  --accent:#3ddc97;
+  --hi:none;
+  --sh-sm:none; --sh-md:none; --sh-lg:none;
+}
+body{background:var(--bg);color:#dde7f2}
+
+/* 树：平面卡片，细线，不做浮动/发光 */
+.nd{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:12px;
+  box-shadow:none;
+  transition:background .14s ease, border-color .14s ease;
+}
+.nd:hover{background:var(--card-2);border-color:var(--line-strong);transform:none}
+.nd.lv1{border-left:2px solid rgba(61,220,151,.55)}
+.mroot{
+  background:#111821;
+  border:1px solid var(--line-strong);
+  box-shadow:none;
+  backdrop-filter:none;-webkit-backdrop-filter:none;
+}
+.mind{--spine:rgba(255,255,255,.11)}
+.site-head{background:rgba(11,15,20,.82);backdrop-filter:blur(14px)}
+.note{background:#121922;border:1px solid var(--line);backdrop-filter:none;box-shadow:none}
+
+/* 字阶：1.2 比例，从 16px 起 */
+h1{font-size:34px;line-height:1.3;letter-spacing:-.012em;font-weight:700}
+h2{font-size:20px;line-height:1.45;letter-spacing:-.006em}
+h3{font-size:17px}
+.nd{font-size:14.8px}
+.nd .no{font-size:11px;color:#8fa4b8}
+.kicker{font-size:11.5px;color:#7f93a8}
+.sub{font-size:16px;color:#a9bbcc}
+
+/* 控件：描边为主，强调色只在「当前」用 */
+.mini{
+  background:transparent;border:1px solid var(--line-strong);color:#c6d4e2;
+  box-shadow:none;border-radius:999px;
+}
+.mini:hover{border-color:rgba(255,255,255,.22);background:rgba(255,255,255,.03)}
+.mini.on{background:rgba(61,220,151,.10);border-color:rgba(61,220,151,.42);color:#8ff0c4}
+
+/* 标签：细描边，不铺满色块 */
+.tag{background:rgba(255,255,255,.045);border:1px solid var(--line);color:#9fb2c4}
+.bad{background:rgba(242,160,106,.08);border:1px solid rgba(242,160,106,.30);color:#f0b48b}
+.ok{background:rgba(61,220,151,.08);border:1px solid rgba(61,220,151,.30);color:#8ff0c4}
+.site-nav a{color:#9fb2c4}
+.site-nav a.on{background:rgba(61,220,151,.12);border:1px solid rgba(61,220,151,.40);color:#8ff0c4}
+
+/* 链接只用一种颜色 */
+a{color:#7fe0b4}
+
+/* 编号小方块：静音版里要看得清，但不抢眼 */
+.nd .no{
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.09);
+  color:#b6c7d8;
+  font-variant-numeric:tabular-nums;
+}
+.nd.lv1 .no{background:rgba(61,220,151,.12);border-color:rgba(61,220,151,.30);color:#8ff0c4}
+
+/* 根节点钉在左上角，和第一根主干对齐——比垂直居中好读 */
+@media (min-width:1150px){
+  .mind{align-items:flex-start;justify-content:center}
+  .mroot{margin-top:4px}
+  .mind > ul.kids::before{top:26px}
+  .mind > ul.kids{justify-content:flex-start}
+}
+
+/* ── 特效层（2026-11-14）：极光底 + 颗粒 + 滚动呈现 + 展开动效 ── */
+body{position:relative}
+body::before{
+  content:"";position:fixed;inset:-20% -10% auto -10%;height:120vh;z-index:-2;pointer-events:none;
+  background:
+    radial-gradient(48% 42% at 18% 12%, rgba(61,220,151,.20), transparent 70%),
+    radial-gradient(42% 38% at 82% 6%, rgba(96,150,255,.17), transparent 72%),
+    radial-gradient(50% 44% at 52% 0%, rgba(242,160,106,.12), transparent 70%);
+  filter:blur(40px) saturate(120%);
+  animation:aurora 34s ease-in-out infinite alternate;
+}
+@keyframes aurora{
+  0%{transform:translate3d(0,0,0) scale(1)}
+  50%{transform:translate3d(-2.5%,1.2%,0) scale(1.06)}
+  100%{transform:translate3d(2%,-1%,0) scale(1.03)}
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.05;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.55'/></svg>");
+  mix-blend-mode:overlay;
+}
+/* 标题里点一个词 */
+h1 .accent{color:#5fe3a6}
+
+/* 滚动呈现：进入视口时浮起 */
+.reveal{opacity:0;transform:translateY(10px);transition:opacity .5s cubic-bezier(.22,.8,.24,1),transform .5s cubic-bezier(.22,.8,.24,1)}
+.reveal.in{opacity:1;transform:none}
+
+/* 展开时子节点淡入 */
+ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
+@keyframes kidIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+
+/* 顶部主卡片轻微呼吸，只有一点点 */
+.note{box-shadow:0 24px 60px -46px rgba(61,220,151,.45)}
+
+@media (prefers-reduced-motion: reduce){
+  body::before{animation:none}
+  .reveal{opacity:1;transform:none;transition:none}
+  ul.kids > li{animation:none}
+  .mind ul.kids > li::before{animation:none}
+}
+
+@keyframes spineFlow{from{background-position:0 0}to{background-position:0 260px}}
+/* 树的氛围光 + 节点悬停微光 + 主干流光（都在低强度上） */
+.mind{position:relative}
+.mind::before{
+  content:";position:absolute;left:8%;top:6%;width:62%;height:76%;z-index:-1;pointer-events:none;
+  background:radial-gradient(50% 50% at 30% 30%, rgba(61,220,151,.10), transparent 70%),
+             radial-gradient(45% 45% at 75% 65%, rgba(96,150,255,.09), transparent 72%);
+  filter:blur(28px);
+}
+.nd{transition:background .16s var(--ease), border-color .16s var(--ease), box-shadow .2s var(--ease), transform .16s var(--ease)}
+.nd:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 26px -18px rgba(0,0,0,.9), 0 0 0 1px rgba(61,220,151,.22), 0 0 22px -12px rgba(61,220,151,.35);
+}
+.mind ul.kids > li::after{border-top-color:rgba(255,255,255,.14)}
+.mind ul.kids > li::before{width:1px;border:0;
+  background:linear-gradient(180deg, rgba(255,255,255,.07) 0%, rgba(61,220,151,.38) 45%, rgba(255,255,255,.07) 100%);
+  background-size:1px 260px;
+  background-repeat:repeat-y;
+  animation:spineFlow 9s linear infinite;
+  opacity:.6}
+</style>
+<style>
+  /* 横向思维导图约需 1220px：窄于 1280px 一律退回竖排缩进树，避免整页横向滚动 */
+  @media (min-width:1280px){ .wrap{max-width:1260px} }
+</style>
+
+  <link rel="prefetch" href="code.html">
+<style>
+  /* 评测复盘页：待确认占位 */
+  .todo{display:inline;background:rgba(250,204,21,.16);color:#fde68a;border:1px dashed rgba(250,204,21,.55);border-radius:6px;padding:1px 6px;font-weight:600;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+  html[data-theme="light"] .todo{background:#fef3c7;color:#713f12;border-color:#d97706}
+  /* 叶子节点按正文排，长句里夹提交号/文件名时不再被拆成一块块 */
+  .mind .nd:not(.lv1){display:block}
+  .mind .nd:not(.lv1) .bad,.mind .nd:not(.lv1) .ok{margin-right:6px}
+  .mind .mono,.note .mono{overflow-wrap:anywhere}
+  /* 窄屏/触屏：正文里的链接把可点区域撑到 ≥44px 高，排版不变 */
+  @media (max-width: 760px), (pointer: coarse){ .nd a, .note a{display:inline-block;padding:10px 2px;margin:-10px -2px} }
+</style>
+</head>
+<body>
+<div class="site-head"><div class="bar">
+  <a class="brand" href="index.html"><i></i>CampusRAG 一页看懂<small>评测怎么做的、哪里没做到</small></a>
+  <nav class="site-nav">
+    <a href="index.html">一张图看全</a>
+    <a href="eval.html" class="on">评测复盘</a>
+    <a href="code.html">代码详解</a>
+  </nav>
+  <button class="theme-toggle" type="button" role="switch" aria-checked="false" aria-label="切换到浅色模式" title="切换到浅色模式">
+    <span class="tt-bloom" aria-hidden="true"></span>
+    <span class="tt-track" aria-hidden="true">
+      <span class="tt-ambient"></span>
+      <span class="tt-glow"></span>
+      <span class="tt-thumb">
+        <svg class="tt-moon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20.4 14.2A8.4 8.4 0 0 1 9.8 3.6a8.5 8.5 0 1 0 10.6 10.6Z"/></svg>
+        <svg class="tt-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/><path d="M12 3v2.2M12 18.8V21M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M3 12h2.2M18.8 12H21M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"/></svg>
+      </span>
+    </span>
+  </button>
+</div></div>
+
+<div class="wrap">
+  <div class="kicker">CampusRAG · 评测复盘</div>
+  <h1>评测复盘：它到底能不能拒答</h1>
+  <p class="sub">首页 05 支只留了摘要，完整过程放在这页。顺序是：结论 → 时间线 → 冻结测试 v1 → 其他实验 → 局限与下一步。每个提交号都能在仓库里 <span class="mono">git show</span> 到，时间都是北京时间（UTC+8）。</p>
+
+  <div class="note" style="margin:16px 0 4px">
+    <b>先说结论：</b>它<b>能拒「跟手册无关」的问题</b>，<b>拒不了「话题在手册里、这件事没写」</b>，后者会答得像模像样却是错的。单靠一个分数阈值在这份手册上走不通；三档判定已经上线（7dcf517），只算<b>部分缓解</b>。
+  </div>
+  <div class="mini-hint" style="margin:8px 0 14px">这页默认全部展开。想看哪一支，可以在地址后加 <span class="mono">?open=02</span>（只展开第 02 支并滚过去）。</div>
+
+  <div class="mind-top">
+    <button class="mini on" data-act="expand">全部展开</button>
+    <button class="mini" data-act="collapse">只看主干</button>
+    <button class="mini" data-act="fs" title="点一下换一档字号，会记住">字号 中</button>
+    <span class="mini-hint" id="treeStat">每个数字都标了来源</span>
+  </div>
+
+  <div class="mind">
+    <div class="mroot">
+      <b>评测复盘</b>
+      <span>冻结测试 v1 <em>60 题</em> · 开发集 <em>27 正 + 31 负</em> · 阈值扫描 <em>15 正 + 34 负</em></span>
+    </div>
+
+    <ul class="kids">
+
+      <!-- ① 结论 -->
+      <li id="conclusion" class="collapsed">
+        <div class="nd lv1 has-kids"><span class="no">01</span><b>结论</b><span class="val">先放结果</span><i class="chev"></i></div>
+        <ul class="kids">
+          <li><div class="nd"><b>检索是稳的</b>：冻结题 60 道里 30 道正例，hit@1 <b>27/30</b>（95% 区间 74%–97%），hit@4 <b>30/30</b>（89%–100%）</div></li>
+          <li><div class="nd"><b>离题能拒</b>：15 道跟手册无关的题，硬答 <b>0/15</b>（只能说硬答率上界约 20%，不能说「没有」）</div></li>
+          <li><div class="nd"><b>话题内缺失拒不掉</b>：15 道「话题在手册里、这件事没写」的题，<b>11/15</b> 落在高置信档照常作答（95% 区间 48%–89%）。这是最危险的失效方式：看起来像答案，其实答错</div></li>
+          <li><div class="nd"><span class="bad">负面结果</span>单靠一个分数阈值判「有没有依据」，在这份手册上<b>不成立</b>：门槛 0.02 几乎全放行，分差规则在留出测试里误拒一半正例。这条负面结果比一个漂亮阈值更有价值</div></li>
+          <li><div class="nd"><span class="bad">冻结测试 v1：已用于诊断</span>这 60 题已经跑过两次，结果也看过了，<b>它已经不是没见过的测试集</b>，现在只能当回归对照。题是 AI 助手写的，不算独立的人写的测试。要再说「冻结测试」，得另写一份 v2</div></li>
+        </ul>
+      </li>
+
+      <!-- ② 时间线 -->
+      <li id="timeline" class="collapsed">
+        <div class="nd lv1 has-kids"><span class="no">02</span><b>时间线</b><span class="val">提交号 · 时间 · 改了什么</span><i class="chev"></i></div>
+        <ul class="kids">
+          <li><div class="nd"><b>11-14 13:45</b> <span class="mono">dd61b25</span> 初版导入：按字硬切 + 固定重叠 60 字 + 门槛 0.02，<b>没有三档</b></div></li>
+          <li><div class="nd"><b>11-14 19:14</b> <span class="mono">e0f992d</span> 阈值扫描扩到 34 条负例：门槛 0.02 下 <b>29/34</b> 能过闸</div></li>
+          <li><div class="nd"><b>11-14 19:31</b> <span class="mono">a255ac0</span> 留出测试（12 条换问法的正例 + 11 条难负例）：分差规则误拒 6/12</div></li>
+          <li><div class="nd"><b>11-14 19:49 / 19:58</b> <span class="mono">3a31e7d</span> 信号体检 <span class="mono">signal_auc.py</span>；<span class="mono">2342242</span> 收下 AI 助手写的第二份 <span class="mono">signal_auc_claude.py</span></div></li>
+          <li><div class="nd"><b>11-14 20:13:36</b> 冻结测试<b>第 1 次运行</b>（<span class="mono">frozen_result.json</span> 里的 <span class="mono">run_at</span>）。代码是旧切分；当时 <span class="mono">ask()</span> 里<b>还没有三档</b>，三档是 <span class="mono">run_frozen_test.py</span> 按配置在脚本里算的</div></li>
+          <li><div class="nd"><b>11-14 20:13:58</b> <span class="mono">2d7493c</span> 题集、阈值配置、运行脚本、定阈值脚本和第 1 次结果<b>在同一个提交里第一次入库</b>（<span class="mono">frozen_testset.json</span>、<span class="mono">frozen_config.json</span>、<span class="mono">run_frozen_test.py</span>、<span class="mono">experiments/dev_thresholds.py</span>、<span class="mono">frozen_result.json</span>）</div></li>
+          <li><div class="nd"><b>11-14 20:52:06</b> 冻结测试<b>第 2 次运行</b>：<span class="mono">--force</span> 重跑，结果自带 <span class="mono">rerun: true</span>、<span class="mono">run_count: 2</span>；代码已是新切分</div></li>
+          <li><div class="nd"><b>11-14 20:53:35</b> <span class="mono">7dcf517</span> 切分改成「条→句」两级；把<b>配置里同一组阈值</b>写进 <span class="mono">ask()</span>（<span class="mono">TIER_HIGH = 2</span>、<span class="mono">TIER_MEDIUM = 1</span>），低置信改为「给最接近原文并提示」；加 4 个对照脚本（<span class="mono">tier_sim / tier_rule_try / tier_report / frozen_tier_check</span>）；第 2 次结果覆盖了 <span class="mono">frozen_result.json</span></div></li>
+          <li><div class="nd"><b>11-15 13:02</b> <span class="mono">93de982</span> 按评审把冻结集改标「v1：已用于诊断」，补切分器版本和数字口径</div></li>
+          <li>
+            <details class="dp" open><summary>看完第 1 次结果之后，到底改了什么</summary>
+              <div class="dpbody">
+                <ul>
+                  <li><b>阈值没改</b>：配置写的是 <span class="mono">matched</span> ≥2 高置信、≥1 低置信；线上 <span class="mono">rag_engine.py</span> 是 <span class="mono">TIER_HIGH = 2</span>、<span class="mono">TIER_MEDIUM = 1</span>，两边一致。<span class="mono">matched</span> 的算法（问句实词去掉同一张疑问词表后，在 top1 卡片里命中几个）两边也一样</li>
+                  <li><b>改了切分器</b>（7dcf517），这会改变卡片，从而改变每题的分数</li>
+                  <li><b>把三档从脚本搬进了线上</b>：第 1 次运行时线上只有 0.02 门槛，三档只存在于测试脚本里</li>
+                  <li><b>试过多信号组合，但没采用</b>：<span class="mono">tier_rule_try.py</span>（7dcf517）在开发集上比了「只靠 matched」「matched + 覆盖率」「matched + 覆盖率 + top1」，是在看过冻结结果之后写的；线上最后仍只用 matched</li>
+                  <li>旧页面写的「看过结果、据此改了三档判定」不准确：<b>改的是切分器和三档的落地方式，阈值本身没动</b></li>
+                </ul>
+                <div class="note" style="margin-top:8px"><b>所以冻结测试评的是不是线上系统？</b>严格的第 1 次<b>不是</b>：它评的是「旧切分 + 脚本里模拟的三档」，和现在线上（新切分 + <span class="mono">ask()</span> 里的三档）不同。和线上一致的是第 2 次，但那是 <span class="mono">--force</span> 重跑，不能算冻结测试。用现在的 <span class="mono">ask()</span> 对 60 题再落一次档（<span class="mono">experiments/frozen_tier_check.py</span>），正例 高置信 23 / 低置信 7 / 无依据 0，离题 0 / 2 / 13，话题内缺失 11 / 4 / 0，和第 2 次结果的计数一致。</div>
+              </div>
+            </details>
+          </li>
+        </ul>
+      </li>
+
+      <!-- ③ 冻结测试 v1 -->
+      <li id="frozen" class="collapsed">
+        <div class="nd lv1 has-kids"><span class="no">03</span><b>冻结测试 v1</b><span class="val">已用于诊断</span><i class="chev"></i></div>
+        <ul class="kids">
+          <li><div class="nd"><b>题</b>：60 题（30 正例 + 15 离题 + 15「话题在手册里、这件事没写」），由 AI 助手（Claude）只依据手册原文写，写题时没看过我的样本和分数。出题人是 AI、照着手册写，和手册、和开发题写法同源，<b>不能算独立的人写的测试</b></div></li>
+          <li><div class="nd"><b>诚实说明</b>：据出题的 AI 助手自己说，它写完冻结题后用占位分词跑过一次冒烟测试、看到过输出，但没有据此改题。这一条只有它的自述，查不到别的记录</div></li>
+          <li><div class="nd"><b>阈值怎么定的</b>：规则是「信号选开发集上对难负例 AUC 最高的 matched（0.87）；低档 = 留出正例 matched 的 10% 分位；高档 = 开发集负例 matched 的最大值」，得到低档 <span class="mono">≥1</span>、高档 <span class="mono">≥2</span>。用 <span class="mono">dev_thresholds.py</span> 在旧切分（2d7493c）和新切分（93de982）下各重跑一次，都得到 1 和 2</div></li>
+          <li><div class="nd"><span class="bad">预先登记验证不了</span>题集、配置和第 1 次结果<b>都是在 2d7493c（20:13:58）这一个提交里第一次入库</b>，配置并不早于结果，git 历史证明不了「阈值在看分数之前写定」。配置文件里自填的 <span class="mono">frozen_at</span> 是 <span class="mono">20:25</span>，反而晚于第 1 次运行的 <span class="mono">20:13:36</span>，这个字段对不上，不能当证据。能验证的只有一点：两次结果里记的题集和配置哈希，和仓库现在的文件一致，说明跑过之后题和阈值没再改</div></li>
+          <li><div class="nd"><b>第 1 次原始结果还在</b>：见提交 <span class="mono">2d7493c</span> 里的 <span class="mono">frozen_result.json</span>（<span class="mono">run_count: 1</span>、<span class="mono">rerun: false</span>）。工作区里的文件被第 2 次 <span class="mono">--force</span> 覆盖了，但 git 历史留着。里面话题内缺失的 top1 AUC <span class="mono">0.5457</span>、分差 <span class="mono">0.6173</span>，就是之前写的 0.55、0.62。在 2d7493c 和 93de982 两个版本下各重跑一次，分别和第 1、2 次结果逐项一致</div></li>
+          <li><div class="nd"><b>三档结果</b>（两次计数完全一样）：正例（检索正确的 27 条）高置信 22、低置信 5、<b>误拒 0</b>；离题<b>硬答 0/15</b>；话题内缺失<b>硬答 11/15</b></div></li>
+          <li><div class="nd"><b>各信号 AUC · 离题</b>：top1 <span class="mono">0.98</span>、分差 <span class="mono">0.99</span>、覆盖率 <span class="mono">0.99</span>、命中词数 <span class="mono">0.99</span>，几乎全分得开</div></li>
+          <li><div class="nd"><b>各信号 AUC · 话题内缺失</b>（第 2 次，新切分）：覆盖率 <span class="mono">0.77</span> [0.61, 0.91]，top1 <span class="mono">0.54</span>、分差 <span class="mono">0.58</span>、命中词数 <span class="mono">0.59</span> 全部贴着 0.5。第 1 次（旧切分）是覆盖率 0.77、top1 0.55、分差 0.62、命中词数 0.59</div></li>
+          <li><div class="nd"><b>选信号这一步本身也过拟合了</b>：在开发集 11 条难负例上按 AUC 最高挑出了命中词数 matched（<span class="mono">0.87</span>，覆盖率 <span class="mono">0.85</span> 第二）；到冻结集 15 条话题内缺失上，matched 掉到 <span class="mono">0.59</span> [0.42, 0.76]，覆盖率只掉到 <span class="mono">0.77</span>。可能的原因：命中词数是<b>绝对计数</b>（问句越长越容易高），覆盖率按问句实词（IDF 加权）的<b>比例</b>归一；在 11 条样本上挑 AUC 最高的那个，本来就容易挑到「碰巧最高」的（赢家诅咒）。<b>这个对照比「硬答 11/15」更值得记住</b></div></li>
+          <li><div class="nd"><span class="bad">别把覆盖率当新结论</span>「覆盖率是唯一区间下界高于 0.5 的信号」是<b>看完冻结结果才发现的</b>。结果文件里一共算了 4 个信号 × 3 组负例（离题 / 话题内缺失 / 全部）= 12 个 AUC，在里面找一个好看的本来就容易碰上。它只能作为 v2 里<b>预先写定</b>的候选信号，不能再用 v1 去验证它</div></li>
+          <li><div class="nd">体检之外人工过了一遍那 15 条缺失负例：<span class="mono">M07</span>「调换宿舍床位要提前几天申请」最边缘（第十五条只写「不得擅自调换」），保留原题、在结果里标注，没有改动</div></li>
+          <li><div class="nd">写结果时的口径：15 条一组里 0 次硬答，只能说<b>上界约 20%</b>；30 条全过只能说<b>下界约 89%</b></div></li>
+        </ul>
+      </li>
+
+      <!-- ④ 其他实验 -->
+      <li id="experiments" class="collapsed">
+        <div class="nd lv1 has-kids"><span class="no">04</span><b>其他实验</b><span class="val">自带评测 · 阈值扫描 · 留出 · 信号体检</span><i class="chev"></i></div>
+        <ul class="kids">
+          <li><div class="nd"><b>自带 15 题评测</b>：15 题<b>全 1.00</b>，门禁通过（新旧切法都是），但这是「满分」不是「完美」：15 题全是正样本，测不出拒答失效 <span class="bad">缺陷 #3</span></div></li>
+          <li><div class="nd"><b>阈值扫描</b>（<span class="mono">experiments/threshold_scan.py</span>，15 正 + 34 负）：门槛 0.02 下 <b>29/34</b> 个负例能过闸。旧切分（e0f992d）负例最高 <span class="mono">0.2014</span>；新切分（93de982）负例最高 <span class="mono">0.2348</span>，过闸数仍是 29/34</div></li>
+          <li><div class="nd"><b>留出测试</b>（a255ac0，旧切分）：门槛 0.02 正例放行 12/12、难负例只拒 3/11；分差 ≥ 0.13 正例只放行 6/12（误拒一半）、难负例拒 8/11。新切分下复跑：分差规则正例放行 7/12、难负例拒 7/11</div></li>
+          <li><div class="nd"><b>开发集负例是 31 条，不是 34 条</b>：<span class="mono">dev_thresholds.py</span> 想把阈值扫描的 34 条也算进来，但它导入的变量名 <span class="mono">NEGATIVES</span> 在 <span class="mono">threshold_scan.py</span> 里不存在（那边叫 <span class="mono">NEGATIVES_A / NEGATIVES_B</span>），出错被静默吞掉，实际只用了难负例 11 + 离题 20 = 31。配置里的说明写成「含 threshold_scan」是错的，31 这个数是对的</div></li>
+          <li>
+            <details class="dp"><summary>方法记录：自带评测 · 留出测试 · 信号体检 · 两份实现互相核对</summary>
+              <div class="dpbody">
+                <p><b>自带 15 题评测</b></p>
+                <ul>
+                  <li>四个指标门槛：关键词 <span class="mono">0.60</span> / 忠实度 <span class="mono">0.70</span> / 检索 <span class="mono">0.70</span> / 综合 <span class="mono">0.65</span>（<span class="mono">evaluation.py</span>）；综合 = 0.4×关键词 + 0.35×忠实度 + 0.25×检索</li>
+                  <li>忠实度算法：每句任取 <b>8 字滑窗</b>命中上下文即算有依据，所以抽取式答案<b>几乎必然 1.00</b>，指标无区分度</li>
+                </ul>
+                <p><b>留出测试</b>（<span class="mono">heldout_check.py</span>，旧切分）：12 条换了问法的正例 + 11 条「话题在手册里、这件事没写」的难负例</p>
+                <ul>
+                  <li>规则 A（门槛 0.02）：正例放行 <b>12/12</b>，难负例只拒 <b>3/11</b>，几乎不拒答</li>
+                  <li>规则 B（分差 ≥ 0.13）：正例只放行 <b>6/12</b>（误拒一半），难负例拒 <b>8/11</b>，误拒太狠</li>
+                  <li>规则 B 误拒的 6 条里，<b>1 条</b>是 top1 与 top2 文本重叠（旧切法的 60 字重叠区）造成的；剩下 5 条是换问法后字面重合度下降</li>
+                  <li>新切法下复跑：规则 A 不变；规则 B 正例放行 7/12、难负例拒 7/11，误拒的 5 条都与重叠无关（现在没有重叠）</li>
+                </ul>
+                <p><b>信号体检</b>（<span class="mono">signal_auc.py</span>，旧切分）：先不选方案，逐个信号算 AUC</p>
+                <ul>
+                  <li>对<b>离题</b>负例：分差 <span class="mono">0.917</span>、top1 <span class="mono">0.887</span>、命中词数 <span class="mono">0.881</span>，离题问题能分</li>
+                  <li>对<b>话题内缺失</b>的难负例（校医院周末开不开门）：命中词数 <span class="mono">0.875</span>、覆盖率 <span class="mono">0.826</span>、IDF 覆盖率 <span class="mono">0.795</span>、top1 <span class="mono">0.739</span>、分差 <span class="mono">0.723</span>，置信区间都很宽（约 <span class="mono">±0.2</span>）</li>
+                </ul>
+                <p><b>两份实现互相核对</b>：第二份 <span class="mono">signal_auc_claude.py</span> 是 AI 助手（Claude）在评审时写的，信号定义与自助区间各写各的；但它和第一份出自同一轮讨论、思路同源，<b>不算独立复现</b>。结论和排序一致，数字略有出入</p>
+                <ul>
+                  <li>对<b>离题</b>负例：覆盖率 <span class="mono">0.95</span>、分差 <span class="mono">0.94</span>、top1 <span class="mono">0.91</span>、命中词数 <span class="mono">0.88</span></li>
+                  <li>对<b>话题内缺失</b>：命中词数 <span class="mono">0.87</span>、覆盖率 <span class="mono">0.85</span>、top1 <span class="mono">0.77</span>、分差 <span class="mono">0.76</span>，全线比离题低 0.1 左右</li>
+                  <li>「分差在难负例上的 AUC」两份脚本分别是 <span class="mono">0.723</span>（signal_auc.py）和 <span class="mono">0.76</span>（signal_auc_claude.py）：差在正例口径，前者用全部 12 条留出正例，后者只用 top1 检索正确的 11 条。下面三个数字都取后者，口径一致</li>
+                  <li><b>过拟合陷阱的教科书样本</b>（同一脚本、同一批信号）：拿<b>训练正例</b>对离题负例算，分差 AUC = <span class="mono">1.00</span>；换成留出正例，掉到 <span class="mono">0.94</span>；再换到话题内缺失负例，只剩 <span class="mono">0.76</span>。<b>同一套代码，三个数字 = 0.76 / 0.94 / 1.00，取决于你拿谁去算。</b>词面信号分不开「同义词」和「真没写」，这不是调参能解决的</li>
+                </ul>
+              </div>
+            </details>
+          </li>
+        </ul>
+      </li>
+
+      <!-- ⑤ 版本与口径 -->
+      <li id="versions" class="collapsed">
+        <div class="nd lv1 has-kids"><span class="no">05</span><b>版本与口径</b><span class="val">哪个数在哪个版本下跑的</span><i class="chev"></i></div>
+        <ul class="kids">
+          <li><div class="nd"><b>旧切分</b>（rag_engine.py 为初版 dd61b25）：阈值扫描（e0f992d）、留出测试（a255ac0）、信号体检（3a31e7d、2342242）、冻结测试第 1 次（2d7493c）</div></li>
+          <li><div class="nd"><b>新切分</b>（7dcf517 起，rag_engine.py 之后没再改）：冻结测试第 2 次、三档对照脚本、本页标了「新切分」的复跑数</div></li>
+          <li><div class="nd"><span class="mono">frozen_result.json</span> 只记了题集和配置的哈希、运行时间，<b>没记代码提交号</b>；上面的版本对应是按运行时间和提交时间排出来的，并用两个版本各重跑一次核对过</div></li>
+        </ul>
+      </li>
+
+      <!-- ⑥ 局限与下一步 -->
+      <li id="next" class="collapsed">
+        <div class="nd lv1 has-kids"><span class="no">06</span><b>局限与下一步</b><span class="val">还没做的</span><i class="chev"></i></div>
+        <ul class="kids">
+          <li><div class="nd"><b>冻结测试 v2</b>：找别人写 10–15 条（同学就行），写之前别看这个站和任何分数；信号和阈值在跑之前写进文件并<b>先单独提交</b>，再跑、再提交结果，这样提交顺序能证明「预先登记」</div></li>
+          <li><div class="nd"><b>v2 的候选信号</b>：覆盖率可以作为预先写定的候选之一（理由见第 03 支），阈值用交叉验证选，不再在 11 条样本上挑最高</div></li>
+          <li><div class="nd"><b>运行记录</b>：给 <span class="mono">run_frozen_test.py</span> 加上「记录代码提交号、每次结果单独存一份、<span class="mono">--force</span> 不覆盖」。AI 助手提供过一版这样的改动，<b>还没合进仓库</b>，现在仓库里的脚本仍会覆盖</div></li>
+          <li><div class="nd"><b>词面以外的信号</b>：话题内缺失的题关键词手册里都有，只是那件事没写，词面信号分不开，需要别的办法</div></li>
+          <li><div class="nd"><b>分工</b>：代码、实验脚本、冻结题集和这几个页面的修改，主要是 AI 助手做的；june 负责提出目标、决定改不改、把结果拿给另一个 AI 助手评审。页面里写「我」的地方是第一人称的行文，不代表每一步都是 june 亲手做的；面试时只讲自己真做过、讲得清的部分</div></li>
+        </ul>
+      </li>
+
+    </ul>
+  </div>
+
+  <div class="note" style="margin-top:26px">
+    回到 <a href="index.html?open=05">一张图看全 · 05 支摘要</a>，或看 <a href="code.html">代码详解</a>。
+  </div>
+</div>
+
+<footer class="site-foot">更新 2026-11-15</footer>
+
+
+<script>
+(() => {
+  const mind = document.querySelector('.mind');
+  if (!mind) return;
+      // —— 展开/收起：高度动画 + 淡入，不再瞬间弹出 ——
+  const EASE = 'cubic-bezier(.32,.08,.24,1)';
+  const childrenOf = (li) => li.querySelector(':scope > ul.kids');
+
+  function openLi(li) {
+    const ul = childrenOf(li);
+    li.classList.remove('collapsed');
+    if (!ul || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const h = ul.scrollHeight;
+    ul.style.overflow = 'hidden';
+    const a = ul.animate(
+      [{ height: '0px', opacity: 0 }, { height: h + 'px', opacity: 1 }],
+      { duration: 340, easing: EASE }
+    );
+    a.onfinish = () => { ul.style.overflow = ''; };
+  }
+
+  function closeLi(li) {
+    const ul = childrenOf(li);
+    if (!ul || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      li.classList.add('collapsed');
+      return;
+    }
+    const h = ul.scrollHeight;
+    ul.style.overflow = 'hidden';
+    const a = ul.animate(
+      [{ height: h + 'px', opacity: 1 }, { height: '0px', opacity: 0 }],
+      { duration: 240, easing: EASE }
+    );
+    a.onfinish = () => { ul.style.overflow = ''; li.classList.add('collapsed'); };
+  }
+
+  function toggleAnimated(li) {
+    if (!li) return;
+    if (li.classList.contains('collapsed')) openLi(li); else closeLi(li);
+  }
+
+  mind.querySelectorAll('.nd.lv1.has-kids').forEach(nd => {
+    nd.addEventListener('click', () => toggleAnimated(nd.closest('li')));
+  });
+  const btns = document.querySelectorAll('.mind-top .mini');
+  const setActive = (el) => btns.forEach(b => b.classList.toggle('on', b === el));
+  const topLevel = () => mind.querySelectorAll(':scope > ul.kids > li');
+  const showOnly = (n) => {
+    topLevel().forEach((li, i) => {
+      if (i < n) { if (li.classList.contains('collapsed')) openLi(li); }
+      else if (!li.classList.contains('collapsed')) closeLi(li);
+    });
+  };
+  document.querySelector('[data-act="expand"]').addEventListener('click', (e) => {
+    mind.querySelectorAll('li.collapsed').forEach((li, i) => setTimeout(() => openLi(li), Math.min(i * 40, 360)));
+    setActive(e.currentTarget);
+  });
+  document.querySelector('[data-act="collapse"]').addEventListener('click', (e) => {
+    showOnly(0);
+    setActive(e.currentTarget);
+  });
+  // 评测复盘页默认全部展开；?open=02,03 则只展开对应主干并滚过去。
+  (function openFromQuery(){
+    var q = '';
+    try { q = new URLSearchParams(location.search).get('open') || ''; } catch (e) { q = ''; }
+    if (!q) { showOnly(99); return; }
+    var want = {};
+    q.split(/[,;\s]+/).forEach(function(s){
+      s = (s || '').trim();
+      if (!s) return;
+      if (/^\d+$/.test(s)) s = ('0' + s).slice(-2);
+      want[s] = true;
+    });
+    topLevel().forEach(function(li){
+      var noEl = li.querySelector(':scope > .nd.lv1 .no');
+      var no = noEl ? noEl.textContent.trim() : '';
+      if (want[no]) { if (li.classList.contains('collapsed')) openLi(li); }
+      else if (!li.classList.contains('collapsed')) closeLi(li);
+    });
+    // 展开后把第一支要看的主干滚到顶栏下方；从「返回」回来时尊重浏览器恢复的位置，不抢
+    var first = null;
+    topLevel().forEach(function(li){
+      var noEl = li.querySelector(':scope > .nd.lv1 .no');
+      if (!first && noEl && want[noEl.textContent.trim()]) first = li;
+    });
+    if (!first) return;
+    var nav = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || null;
+    if (nav && nav.type === 'back_forward') return;
+    var jump = function(){
+      var head = document.querySelector('.site-head');
+      var pos = head ? getComputedStyle(head).position : '';
+      var off = ((pos === 'sticky' || pos === 'fixed') ? head.getBoundingClientRect().height : 0) + 16;
+      var top = Math.max(0, first.getBoundingClientRect().top + window.scrollY - off);
+      var L = window.__campusragLenis;
+      if (L && typeof L.resize === 'function') L.resize();
+      if (L && typeof L.scrollTo === 'function') L.scrollTo(top, { immediate: true, force: true });
+      else window.scrollTo(0, top);
+    };
+    if (document.readyState === 'complete') setTimeout(jump, 420);
+    else window.addEventListener('load', function(){ setTimeout(jump, 420); }, { once: true });
+  })();
+})();
+</script>
+
+<script>
+(function () {
+  var roots = document.querySelectorAll('.mind > ul.kids > li');
+  var nodes = document.querySelectorAll('.mind .nd');
+  var el = document.getElementById('treeStat');
+  if (el) el.textContent = roots.length + ' 根主干 · ' + nodes.length + ' 个细节 · 数字都标了来源';
+})();
+</script>
+
+<script>
+(() => {
+  const FS = ['15px', '16px', '17px', '18px'];
+  const LABEL = ['小', '中', '大', '特大'];
+  let i = parseInt(localStorage.getItem('crag-fs') || '1', 10);
+  if (!(i >= 0 && i < FS.length)) i = 1;
+  const btn = document.querySelector('.mini[data-act="fs"]');
+  const apply = () => {
+    document.documentElement.style.setProperty('--fs-body', FS[i]);
+    if (btn) btn.textContent = '字号 ' + LABEL[i];
+  };
+  apply();
+  if (btn) btn.addEventListener('click', () => {
+    i = (i + 1) % FS.length;
+    localStorage.setItem('crag-fs', String(i));
+    apply();
+  });
+})();
+</script>
+
+<script>
+(() => {
+  // 标题第一个分句上色
+  const h1 = document.querySelector('h1');
+  if (h1 && !h1.querySelector('.accent')) {
+    const t = h1.firstChild;
+    if (t && t.nodeType === 3 && t.textContent.includes('：')) {
+      const i = t.textContent.indexOf('：');
+      const head = t.textContent.slice(0, i);
+      const rest = t.textContent.slice(i);
+      const span = document.createElement('span');
+      span.className = 'accent';
+      span.textContent = head;
+      h1.replaceChild(document.createTextNode(''), t);
+      h1.insertBefore(span, h1.firstChild);
+      h1.insertBefore(document.createTextNode(rest), span.nextSibling);
+    }
+  }
+  // 滚动呈现
+  const io = new IntersectionObserver((es) => {
+    es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { rootMargin: '0px 0px -8% 0px' });
+  document.querySelectorAll('.nd, .note, .journey, .dp').forEach((el, i) => {
+    el.classList.add('reveal');
+    el.style.transitionDelay = Math.min(i * 18, 220) + 'ms';
+    io.observe(el);
+  });
+})();
+</script>
+
+<script src="assets/vendor/lenis/lenis.min.js?v=21"></script>
+<script src="assets/fx.js?v=21"></script>
+<script src="assets/liquid-glass.js?v=21"></script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
