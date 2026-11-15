@@ -6,7 +6,12 @@
   3. high = 开发集所有负例（离题 + 难负例）信号值的最大值。
 
 开发集 = 训练正例 15（evaluation.EVAL_CASES）+ 留出正例 12（heldout_check.HELDOUT_POS）
-        + 负例 34（threshold_scan）+ 难负例 11（HARD_NEG）+ 离题 20（negative_probe）
+        + 负例 31（难负例 11 HARD_NEG + 离题 20 negative_probe.NEGATIVE_QUESTIONS）。
+注意：曾误写「再加 threshold_scan 的 34 条」。threshold_scan 里没有名叫 NEGATIVES 的变量
+（只有 NEGATIVES_A / NEGATIVES_B），旧代码导入失败被静默吞掉，实际从未把这 34 条算进来。
+本脚本按当时的实际口径只用 31 条，不再做那个假导入。frozen_config.json 里
+「含 threshold_scan」的说明是当时的旧字；为了不改配置哈希、保住 v1 核对，
+那个文件本身不改，以这里和评测复盘页的更正为准。
 """
 
 import logging
@@ -14,7 +19,7 @@ import statistics
 import sys
 from pathlib import Path
 
-ROOT = Path(r"C:\Users\傻福\Desktop\CampusRAG-Eval\campus-rag")
+ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.append(str(ROOT / "experiments"))
 logging.disable(logging.CRITICAL)
@@ -26,11 +31,6 @@ from heldout_check import HARD_NEG, HELDOUT_POS  # noqa: E402
 from negative_probe import NEGATIVE_QUESTIONS  # noqa: E402
 from evaluation import EVAL_CASES  # noqa: E402
 
-try:
-    from threshold_scan import NEGATIVES as SCAN_NEG  # noqa: E402
-except Exception:
-    SCAN_NEG = []
-
 
 def pct(vals, p):
     vals = sorted(vals)
@@ -40,13 +40,25 @@ def pct(vals, p):
     return vals[k]
 
 
+def load_questions(label, qs):
+    qs = list(qs)
+    print(f"  {label}:载入 {len(qs)} 条")
+    if len(qs) == 0:
+        raise SystemExit(f"{label} 条数为 0,停止运行(不会悄悄跳过)")
+    return qs
+
+
 def main() -> None:
     engine = load_engine_with_handbook()
     weight = build_weight(engine)
 
-    train_q = [c["question"] for c in EVAL_CASES]
-    held_q = [q for q, _ in HELDOUT_POS]
-    neg_q = list(SCAN_NEG) + list(HARD_NEG) + list(NEGATIVE_QUESTIONS)
+    print("载入开发集题目:")
+    train_q = load_questions("evaluation.EVAL_CASES", [c["question"] for c in EVAL_CASES])
+    held_q = load_questions("heldout_check.HELDOUT_POS", [q for q, _ in HELDOUT_POS])
+    hard_q = load_questions("heldout_check.HARD_NEG", HARD_NEG)
+    off_q = load_questions("negative_probe.NEGATIVE_QUESTIONS", NEGATIVE_QUESTIONS)
+    neg_q = hard_q + off_q
+    print(f"  负例合计: {len(neg_q)} 条（难负例 {len(hard_q)} + 离题 {len(off_q)}，不含 threshold_scan）")
 
     def collect(qs):
         out = []

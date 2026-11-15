@@ -4,7 +4,7 @@ import logging
 import sys
 from pathlib import Path
 
-ROOT = Path(r"C:\Users\傻福\Desktop\CampusRAG-Eval\campus-rag")
+ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.append(str(ROOT / "experiments"))
 logging.disable(logging.CRITICAL)

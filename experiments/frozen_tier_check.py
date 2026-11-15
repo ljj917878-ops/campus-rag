@@ -10,13 +10,19 @@ import logging
 import sys
 from pathlib import Path
 
-ROOT = Path(r"C:\Users\傻福\Desktop\CampusRAG-Eval\campus-rag")
+ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 logging.disable(logging.CRITICAL)
 
 from rag_engine import load_engine_with_handbook  # noqa: E402
 
 data = json.loads((ROOT / "frozen_testset.json").read_text(encoding="utf-8"))
+print(
+    "载入冻结题:"
+    f"正例 {len(data['positives'])} / "
+    f"离题负例 {len(data['negatives_offtopic'])} / "
+    f"话题内缺失负例 {len(data['negatives_in_domain'])}"
+)
 engine = load_engine_with_handbook()
 
 

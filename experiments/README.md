@@ -5,8 +5,9 @@
 
 前提：用项目自带的 venv（全局 Python 3.13 没装 sklearn）。
 
+在仓库根目录执行：
+
 ```powershell
-cd C:\Users\傻福\Desktop\CampusRAG-Eval\campus-rag
 .\.venv\Scripts\python.exe experiments\<脚本名>.py
 ```
 

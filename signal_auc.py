@@ -122,14 +122,21 @@ def medians(title, rows):
 
 
 def load_easy_negatives(path):
+    """载入离题负例,并打印条数。模块不存在会明说;模块在但变量名不对会直接报错。"""
     if path:
         with open(path, encoding="utf-8") as f:
-            return [line.strip() for line in f if line.strip()]
+            qs = [line.strip() for line in f if line.strip()]
+        print(f"离题负例:从 {path} 载入 {len(qs)} 条")
+        if not qs:
+            raise SystemExit("--easy-neg 文件是空的,停止运行")
+        return qs
     try:
-        from threshold_experiment import NEGATIVES  # 之前给的脚本里的离题问题
-        return list(NEGATIVES)
-    except ImportError:
+        from threshold_experiment import NEGATIVES  # ImportError(名字不对)不会被吞掉
+    except ModuleNotFoundError:
+        print("离题负例:没找到 threshold_experiment.py,也没给 --easy-neg,离题相关对比会被跳过")
         return []
+    print(f"离题负例:从 threshold_experiment.NEGATIVES 载入 {len(NEGATIVES)} 条")
+    return list(NEGATIVES)
 
 
 def main():
