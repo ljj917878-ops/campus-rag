@@ -230,6 +230,10 @@
       document.body.classList.add("fx-leaving");
       setTimeout(() => { location.href = href; }, 380);
     };
+    // 按返回键从往返缓存（bfcache）恢复时，页面还停在「离开」动画的末帧，要撤掉
+    window.addEventListener("pageshow", (e) => {
+      if (e.persisted) document.body.classList.remove("fx-leaving");
+    });
     document.querySelectorAll("a[href]").forEach((a) => {
       const href = a.getAttribute("href") || "";
       if (!/^(index|code)\.html/.test(href)) return;

@@ -1519,3 +1519,52 @@ html:not([data-theme="light"]) .mmd-box text{
   overflow-x: auto;
 }
 .mmd-box svg{ max-width: 100%; height: auto; }
+
+/* ── 可达性补丁 v21（2026-11-15）：触控目标 ≥44px、对比度 ≥4.5 ── */
+/* 触控：窄屏或粗指针时，按钮与导航的可点区域至少 44px 高；视觉尺寸尽量不变 */
+@media (max-width: 760px), (pointer: coarse){
+  .mini,
+  .site-nav a,
+  nav.subtabs button{
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .brand{ min-height: 44px; display: inline-flex; align-items: center; }
+  .theme-toggle{ position: relative; min-height: 44px; }
+  /* 代码页函数目录：窄屏改成单行横滑，免得吸顶条叠成好几行吃掉屏幕 */
+  .fnbar{
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .fnbar::-webkit-scrollbar{ display: none; }
+  /* 右侧模块导航：手机上小圆点点不准，只留「上一支 / 下一支 / 目录」三个 44px 按钮 */
+  .mod-dock-rail{ display: none; }
+  .mod-dock-btn{ width: 44px; height: 44px; }
+  .mod-dock-open{ min-width: 44px; min-height: 44px; justify-content: center; }
+  .mod-dock-open kbd{ display: none; }
+  .fnbar a{
+    flex: 0 0 auto;
+    min-height: 44px;
+    display: inline-flex !important;
+    align-items: center;
+    white-space: nowrap;
+  }
+}
+/* 对比度：深色行号 4.39 → 约 5.0；浅色次要灰 3.3 → 约 5.0，强调绿 4.3 → 约 5.3 */
+html:not([data-theme="light"]) .ln{ color: #8193a6 !important; }
+html[data-theme="light"]{ --dim-2: #5f6a77; }
+html[data-theme="light"] .mini-hint,
+html[data-theme="light"] .site-foot,
+html[data-theme="light"] .loc,
+html[data-theme="light"] .ln{ color: #5f6a77 !important; }
+html[data-theme="light"] .mroot em{ color: #11744c !important; }
+html[data-theme="light"] .fnbar a.is-active-link{ background: #11744c !important; border-color: #0d5e3d !important; }
+/* 减少动态效果：伪元素上的动画（如主干流光）也要停，* 选择器管不到 ::before/::after */
+@media (prefers-reduced-motion: reduce){
+  *::before, *::after{ animation: none !important; transition: none !important; }
+}

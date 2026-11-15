@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CampusRAG · 小白版</title>
 <link rel="stylesheet" href="assets/site.css?v=20261114f">
-<link rel="stylesheet" href="assets/fx.css?v=20">
-<link rel="stylesheet" href="assets/vendor/lenis/lenis.css?v=20">
-<link rel="stylesheet" href="assets/vendor/tocbot/tocbot.css?v=20">
-<link rel="stylesheet" href="assets/vendor/prism/themes/prism-tomorrow.min.css?v=20" id="prism-theme-dark">
-<link rel="stylesheet" href="assets/vendor/prism/themes/prism.min.css?v=20" id="prism-theme-light" disabled>
+<link rel="stylesheet" href="assets/fx.css?v=21">
+<link rel="stylesheet" href="assets/vendor/lenis/lenis.css?v=21">
+<link rel="stylesheet" href="assets/vendor/tocbot/tocbot.css?v=21">
+<link rel="stylesheet" href="assets/vendor/prism/themes/prism-tomorrow.min.css?v=21" id="prism-theme-dark">
+<link rel="stylesheet" href="assets/vendor/prism/themes/prism.min.css?v=21" id="prism-theme-light" disabled>
 <script>(function(){try{var t=document.documentElement.getAttribute("data-theme")==="light"?"light":"dark";var d=document.getElementById("prism-theme-dark");var l=document.getElementById("prism-theme-light");if(d&&l){d.disabled=t==="light";l.disabled=t!=="light";}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}
@@ -443,7 +443,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
   <nav id="fn-toc" class="fn-toc-hidden" hidden aria-hidden="true"></nav>
   <div class="fnbar"><a href="#fn0">split_into_chunks()</a><a href="#fn1b">_units_of() / _pack_sentences()</a><a href="#fn1">_fit()</a><a href="#fn2">retrieve()</a><a href="#fn3">ask() 的判断部分</a><a href="#fn4">_compose_answer()</a><a href="#fn5">界面怎么接引擎</a></div>
   <section class="fn"><h3 id="fn0">split_into_chunks() <span class="loc">rag_engine.py:195</span></h3><p class="what">把一整本手册切成一张张「小卡片」。为什么切？因为后面要找「最相关的那几段」，总不能每次把整本书塞进去。</p><div class="blk"><div class="cside"><div class="ln">195–196</div><pre class="language-python"><code class="language-python">def split_into_chunks(text: str, source: str, chunk_size: int = 280, overlap: int = 60) -&gt; list[Chunk]:
-    """按段落优先切分；长段落按句子边界打包，不切断句子。"""</code></pre></div><div class="nside">函数定义。chunk_size=280 意思是「一张卡片最多 280 个字」，overlap=60 是「相邻卡片重叠 60 字」。</div></div><div class="blk"><div class="cside"><div class="ln">197–200</div><pre class="language-python"><code class="language-python">    if chunk_size &lt;= 0:
+    """按段落优先切分；长段落按句子边界打包，不切断句子。"""</code></pre></div><div class="nside">函数定义。chunk_size=280 意思是「一张卡片最多 280 个字」，overlap=60 是「相邻卡片最多重叠 60 字」——只拿整条/整句去重叠，这份手册被切开的段里块尾那条都长于 60 字，所以实测 15 张卡片之间没有重叠。</div></div><div class="blk"><div class="cside"><div class="ln">197–200</div><pre class="language-python"><code class="language-python">    if chunk_size &lt;= 0:
         raise ValueError("chunk_size 必须为正整数")
     if overlap &gt;= chunk_size:
         overlap = max(0, chunk_size // 5)</code></pre></div><div class="nside">防呆：卡片大小不能是 0 或负数；如果重叠比卡片还大，就把重叠砍到卡片的五分之一。</div></div><div class="blk"><div class="cside"><div class="ln">202–204</div><pre class="language-python"><code class="language-python">    text = _normalize_whitespace(text)
@@ -532,7 +532,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
             min_df=1,
             sublinear_tf=True,
             norm="l2",
-        )</code></pre></div><div class="nside">创建 TF-IDF 计算器：analyzer 用 jieba 中文分词（因为中文词之间没空格），它还会额外加相邻两字的组合（2-gram），好处是专有词被切错也能补救，代价是词表变大、噪声变多；min_df=1 表示「只出现一次的词也保留」，norm='l2' 把每行长度归一化，避免长卡片天然分数高。</div></div><div class="blk"><div class="cside"><div class="ln">339</div><pre class="language-python"><code class="language-python">        self._matrix = self._vectorizer.fit_transform(corpus)</code></pre></div><div class="nside">核心：算出 15 行 × 1857 列的大表。每一格 = 某个词在某张卡片里有多重要。算完存起来，以后提问时重复用。</div></div><div class="blk"><div class="cside"><div class="ln">340</div><pre class="language-python"><code class="language-python">        logger.debug("向量索引已更新 documents=%d terms=%d", len(corpus), len(self._vectorizer.get_feature_names_out()))</code></pre></div><div class="nside">记日志：多少文档、多少个词。</div></div></section><section class="fn"><h3 id="fn2">retrieve() <span class="loc">rag_engine.py:342</span></h3><p class="what">拿你的问题，去 15 张卡片里找最像的几张。</p><div class="blk"><div class="cside"><div class="ln">343–344</div><pre class="language-python"><code class="language-python">        if not self.is_ready() or self._vectorizer is None or self._matrix is None:
+        )</code></pre></div><div class="nside">创建 TF-IDF 计算器：analyzer 用 jieba 中文分词（因为中文词之间没空格），它还会额外加相邻两字的组合（2-gram），好处是专有词被切错也能补救，代价是词表变大、噪声变多；min_df=1 表示「只出现一次的词也保留」，norm='l2' 把每行长度归一化，避免长卡片天然分数高。</div></div><div class="blk"><div class="cside"><div class="ln">339</div><pre class="language-python"><code class="language-python">        self._matrix = self._vectorizer.fit_transform(corpus)</code></pre></div><div class="nside">核心：算出 15 行 × 1856 列的大表。每一格 = 某个词在某张卡片里有多重要。算完存起来，以后提问时重复用。</div></div><div class="blk"><div class="cside"><div class="ln">340</div><pre class="language-python"><code class="language-python">        logger.debug("向量索引已更新 documents=%d terms=%d", len(corpus), len(self._vectorizer.get_feature_names_out()))</code></pre></div><div class="nside">记日志：多少文档、多少个词。</div></div></section><section class="fn"><h3 id="fn2">retrieve() <span class="loc">rag_engine.py:342</span></h3><p class="what">拿你的问题，去 15 张卡片里找最像的几张。</p><div class="blk"><div class="cside"><div class="ln">343–344</div><pre class="language-python"><code class="language-python">        if not self.is_ready() or self._vectorizer is None or self._matrix is None:
             raise RuntimeError("尚未加载任何文档，无法检索")</code></pre></div><div class="nside">如果还没加载文档，直接报错——不能对着空气检索。</div></div><div class="blk"><div class="cside"><div class="ln">348–349</div><pre class="language-python"><code class="language-python">        k = top_k or self.top_k
         k = max(1, min(k, len(self.chunks)))</code></pre></div><div class="nside">k = 最多返回几张，默认 4；但不能超过卡片总数（只有 15 张时不会要 20 张）。</div></div><div class="blk"><div class="cside"><div class="ln">350</div><pre class="language-python"><code class="language-python">        q_vec = self._vectorizer.transform([q])</code></pre></div><div class="nside">把你的问题也变成同样格式的「关键词档案」。注意是 transform 不是 fit：用已经建好的词表，不能重新学一套词，否则两边对不上。</div></div><div class="blk"><div class="cside"><div class="ln">351</div><pre class="language-python"><code class="language-python">        scores = cosine_similarity(q_vec, self._matrix).ravel()</code></pre></div><div class="nside">余弦相似度：算问题和每一张卡片的「方向重合度」，结果是一个 0~1 之间的数，越大越像。</div></div><div class="blk"><div class="cside"><div class="ln">352–353</div><pre class="language-python"><code class="language-python">        order = np.argsort(scores)[::-1][:k]
         hits = [(self.chunks[i], float(scores[i])) for i in order if scores[i] &gt; 0]</code></pre></div><div class="nside">按分数从高到低排序，取前 k 个；`if scores[i] > 0` 表示 0 分的直接丢掉——所以有时只返回 3 条而不是 4 条。</div></div><div class="blk"><div class="cside"><div class="ln">354–356</div><pre class="language-python"><code class="language-python">        if not hits:
@@ -670,10 +670,10 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
   <div class="warn"><h4>卡片曾经是按字数硬切的（已修）</h4><p>旧版 12 段里有 3 段超过 280 字（293 / 304 / 299），被按 220 字一格硬切，于是第 4、8、10 张卡片从句子中间开始：-004 以「。」开头，-008 以「重警告处分；因此造成火情的，从重处理。」开头，-010 以「费为 20 元，挂失成功后原卡即时失效」开头——那种没头没尾的片段，检索到也没法用。</p><p><b>2026-11-14 已改成「条 → 句」两级切分</b>：先按「第 X 条」分条，条内按句号分句，280 字降级成上限（只在单句超长时才硬切）。现在 15 张卡片都从「章 / 条 / 附则」边界开始，切点只落在句子之间。上面代码批注里的 <code>_units_of()</code> 和 <code>_pack_sentences()</code> 就是新逻辑。</p></div><div class="warn"><h4>及格线 0.02 太低，等于没有</h4><p>问「学校附近哪家火锅好吃？」，问句 6 个词里只有「学校」在词表里，而「学校」几乎每章都有。就靠这一个词，三张卡片拿到 0.0879 / 0.0856 / 0.0835，全部过线，status=ok，答案讲的是社团、毕业证、校园网。</p><p class="ev">查证方式：把问句向量里非零的项列出来，只剩一个「学校」；余弦相似度基本就等于这一项的贡献。</p></div><div class="warn"><h4>评测 15 题全 1.00，测不出上面两个问题</h4><p>那 15 道题全是「手册里确实写了」的题，一条拒答用例都没有。所以它只能证明「问手册里有的，它能答」，证明不了「问手册里没有的，它会说不知道」。</p><p class="ev">答辩被问「怎么保证不乱答」时，这是最容易被追问的点。</p></div>
   <h2>自测 6 问</h2>
   <p class="lead">先自己说一遍，再点开看。能用自己的话讲清楚，这项目才算你的。</p>
-  <details><summary>为什么要把手册切成 15 段，而不是整本塞进去？</summary><p>整本塞进去有两个问题：一是太长，二是没法知道答案来自哪一段。切开之后才能「找出最相关的几段」，也才能标引用。</p></details><details><summary>280 / 60 这两个数字分别管什么？</summary><p>280 = 一张卡片最多多少字；60 = 相邻卡片最多重叠多少字，用来避免一句正好被切在边界上。现在不是按固定步长 220 个字去滑动硬切，而是先按「条」和句子边界打包，重叠也只发生在完整的单位上。</p></details><details><summary>什么是「向量」？用这个项目解释。</summary><p>就是「每个词有多重要」的一串分数。15 张卡片 × 1857 个词，每张卡片就是一行 1857 个数字。</p></details><details><summary>为什么检索用 transform，建索引用 fit_transform？</summary><p>建索引时要「学」出词表，所以用 fit_transform；提问时必须用同一套词表，只能 transform，否则两边的词对不上，分数就没意义。</p></details><details><summary>「宿舍几点熄灯」只返回 3 条，不是 top_k=4 吗？</summary><p>top_k 是上限。第 4 名分数是 0，被 retrieve() 里的 `if scores[i] > 0` 过滤掉了。</p></details><details><summary>如果只让你改一处，让它更可靠，你改哪儿？</summary><p>改切段：按句子/段落边界切，保证每张卡片从完整句子开始。这一处同时修好「半句开头」和一部分「答非所问」。</p></details>
+  <details><summary>为什么要把手册切成 15 段，而不是整本塞进去？</summary><p>整本塞进去有两个问题：一是太长，二是没法知道答案来自哪一段。切开之后才能「找出最相关的几段」，也才能标引用。</p></details><details><summary>280 / 60 这两个数字分别管什么？</summary><p>280 = 一张卡片最多多少字；60 = 相邻卡片最多重叠多少字，用来避免一句正好被切在边界上。现在不是按固定步长 220 个字去滑动硬切，而是先按「条」和句子边界打包，重叠也只发生在完整的单位上。这份手册里块尾那条都长于 60 字，放不进重叠额度，实测 15 张卡片共 2647 字符、彼此没有重叠（12 段正文合计 2650）。</p></details><details><summary>什么是「向量」？用这个项目解释。</summary><p>就是「每个词有多重要」的一串分数。15 张卡片 × 1856 个词，每张卡片就是一行 1856 个数字。</p></details><details><summary>为什么检索用 transform，建索引用 fit_transform？</summary><p>建索引时要「学」出词表，所以用 fit_transform；提问时必须用同一套词表，只能 transform，否则两边的词对不上，分数就没意义。</p></details><details><summary>「宿舍几点熄灯」只返回 3 条，不是 top_k=4 吗？</summary><p>top_k 是上限。第 4 名分数是 0，被 retrieve() 里的 `if scores[i] > 0` 过滤掉了。</p></details><details><summary>如果只让你改一处，让它更可靠，你改哪儿？</summary><p>改切段：按句子/段落边界切，保证每张卡片从完整句子开始。这一处同时修好「半句开头」和一部分「答非所问」。</p></details>
 </div>
 </main>
-<footer>由贾维斯生成 · 数据源：15 段 / 1857 词 / 15 题评测</footer>
+<footer>由贾维斯生成 · 数据源：15 段 / 1856 词 / 15 题评测</footer>
 <script>
 const bs=[...document.querySelectorAll('nav button')];
 const ps=[...document.querySelectorAll('.panel')];
@@ -717,12 +717,12 @@ document.querySelectorAll('[data-go]').forEach(a=>a.onclick=(e)=>{
 })();
 </script>
 
-<script src="assets/vendor/lenis/lenis.min.js?v=20"></script>
-<script src="assets/vendor/tocbot/tocbot.min.js?v=20"></script>
-<script src="assets/vendor/prism/prism.min.js?v=20"></script>
-<script src="assets/vendor/prism/components/prism-python.min.js?v=20"></script>
-<script src="assets/fx.js?v=20"></script>
-<script src="assets/liquid-glass.js?v=20"></script>
+<script src="assets/vendor/lenis/lenis.min.js?v=21"></script>
+<script src="assets/vendor/tocbot/tocbot.min.js?v=21"></script>
+<script src="assets/vendor/prism/prism.min.js?v=21"></script>
+<script src="assets/vendor/prism/components/prism-python.min.js?v=21"></script>
+<script src="assets/fx.js?v=21"></script>
+<script src="assets/liquid-glass.js?v=21"></script>
 </body></html>
 
 
