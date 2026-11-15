@@ -6,36 +6,65 @@
   let loading = null;
   let renderSeq = 0;
 
-  function themeName() {
-    return document.documentElement.getAttribute("data-theme") === "light" ? "default" : "dark";
+  function isLight() {
+    return document.documentElement.getAttribute("data-theme") === "light";
   }
 
   function config() {
-    const light = themeName() === "light";
+    const light = isLight();
+    const darkVars = {
+      darkMode: true,
+      background: "#10161d",
+      primaryColor: "#1a242e",
+      primaryTextColor: "#eef4fb",
+      primaryBorderColor: "#5c6e7c",
+      secondaryColor: "#1e2832",
+      secondaryTextColor: "#eef4fb",
+      secondaryBorderColor: "#5c6e7c",
+      tertiaryColor: "#151c24",
+      tertiaryTextColor: "#eef4fb",
+      lineColor: "#8aa0b2",
+      textColor: "#eef4fb",
+      mainBkg: "#1a242e",
+      nodeBorder: "#5c6e7c",
+      clusterBkg: "#151c24",
+      clusterBorder: "#4d6273",
+      titleColor: "#eef4fb",
+      edgeLabelBackground: "#1c2732",
+    };
+    const lightVars = {
+      background: "#f4f1ea",
+      primaryColor: "#f7f4ee",
+      primaryTextColor: "#1c2430",
+      primaryBorderColor: "#b9b2a4",
+      secondaryColor: "#efeae0",
+      secondaryTextColor: "#1c2430",
+      secondaryBorderColor: "#b9b2a4",
+      tertiaryColor: "#ece8df",
+      tertiaryTextColor: "#1c2430",
+      lineColor: "#6b7380",
+      textColor: "#1c2430",
+      mainBkg: "#f7f4ee",
+      nodeBorder: "#b9b2a4",
+      clusterBkg: "#efeae0",
+      clusterBorder: "#c5beb0",
+      titleColor: "#1c2430",
+      edgeLabelBackground: "#f4f1ea",
+    };
     return {
       startOnLoad: false,
       theme: light ? "default" : "dark",
       securityLevel: "strict",
       fontFamily: "inherit",
-      themeVariables: light ? undefined : {
-        darkMode: true,
-        background: "#10161d",
-        primaryColor: "#2a3d4d",
-        primaryTextColor: "#eef4fb",
-        primaryBorderColor: "#7ad4b0",
-        secondaryColor: "#243240",
-        secondaryTextColor: "#eef4fb",
-        secondaryBorderColor: "#6a8498",
-        tertiaryColor: "#1a242e",
-        tertiaryTextColor: "#eef4fb",
-        lineColor: "#b7c8d6",
-        textColor: "#eef4fb",
-        mainBkg: "#2a3d4d",
-        nodeBorder: "#7ad4b0",
-        clusterBkg: "#151c24",
-        clusterBorder: "#4d6273",
-        titleColor: "#eef4fb",
-        edgeLabelBackground: "#1c2732",
+      themeVariables: light ? lightVars : darkVars,
+      flowchart: {
+        htmlLabels: true,
+        wrappingWidth: 280,
+        padding: 12,
+        nodeSpacing: 36,
+        rankSpacing: 44,
+        useMaxWidth: true,
+        curve: "basis",
       },
     };
   }
@@ -65,6 +94,12 @@
       svg.setAttribute("width", "100%");
       svg.style.maxWidth = Math.ceil(w) + "px";
       svg.removeAttribute("height");
+      // 圆角细边，跟树卡片一致；只改 Mermaid SVG，不动页面里的 .rail .node
+      svg.querySelectorAll(".node rect, .cluster rect").forEach((r) => {
+        r.setAttribute("rx", "12");
+        r.setAttribute("ry", "12");
+        r.setAttribute("stroke-width", "1");
+      });
     } catch (err) {}
   }
 

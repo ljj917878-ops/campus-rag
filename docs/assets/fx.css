@@ -1568,3 +1568,124 @@ html[data-theme="light"] .fnbar a.is-active-link{ background: #11744c !important
 @media (prefers-reduced-motion: reduce){
   *::before, *::after{ animation: none !important; transition: none !important; }
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   v22：录屏评审补丁（2026-11-15）
+   代码换行、注释对比度、流程图圆角细边、树布局、批注对齐、描边收束
+   ══════════════════════════════════════════════════════════════ */
+
+/* 1. 代码块：桌面和手机都自动换行，块内不再横滚；续行做悬挂缩进 */
+.cside{
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+.cside pre,
+.cside pre[class*="language-"],
+.cside pre[class*="language-"] code,
+.cside code[class*="language-"]{
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  overflow-x: hidden !important;
+}
+/* 不在整个 pre 上做 text-indent 悬挂：那只会缩进第一行，后续换行会顶到行号区。 */
+.cside pre[class*="language-"] code,
+.cside code[class*="language-"]{
+  display: block;
+  padding-left: 0 !important;
+  text-indent: 0;
+}
+@media (max-width: 760px){
+  .cside pre[class*="language-"],
+  .cside pre[class*="language-"] code{
+    white-space: pre-wrap !important;
+    word-break: break-word;
+    overflow-x: hidden !important;
+  }
+}
+
+/* 2. 注释与行号对比度 ≥ 4.5:1
+   深色：Prism Tomorrow 注释 #999 在 #12181e 上已约 6.27:1，行号 #8193a6 约 5.67:1，保持并写死，避免被主题盖掉。
+   浅色：默认注释 #708090 在代码底 #f3efe6 上只有约 3.53:1，改成 #4d5966（约 6.23:1）；行号从 #5f6a77（约 4.80:1）一并改到同一色，留余量。 */
+html:not([data-theme="light"]) .cside .token.comment,
+html:not([data-theme="light"]) .cside .token.prolog,
+html:not([data-theme="light"]) .cside .token.doctype,
+html:not([data-theme="light"]) .cside .token.cdata,
+html:not([data-theme="light"]) .cside .token.block-comment{
+  color: #a8b8c6 !important; /* #a8b8c6 on #12181e ≈ 8.80:1 */
+}
+html:not([data-theme="light"]) .ln{ color: #8fa3b6 !important; } /* on #12181e ≈ 6.88:1 */
+html[data-theme="light"] .cside .token.comment,
+html[data-theme="light"] .cside .token.prolog,
+html[data-theme="light"] .cside .token.doctype,
+html[data-theme="light"] .cside .token.cdata,
+html[data-theme="light"] .cside .token.block-comment{
+  color: #4d5966 !important; /* on #f3efe6 ≈ 6.23:1 */
+}
+html[data-theme="light"] .ln{ color: #4d5966 !important; } /* on #f3efe6 ≈ 6.23:1 */
+
+/* 4. 流程图节点：圆角细边，跟树卡片一致。选择器限定在 .mmd-box，不动 .rail .node */
+.mmd-box .node rect,
+.mmd-box .cluster rect{
+  rx: 12px;
+  ry: 12px;
+  stroke-width: 1px !important;
+  filter: none !important;
+}
+.mmd-box .node .label,
+.mmd-box .nodeLabel,
+.mmd-box .nodeLabel p{
+  text-align: center;
+}
+html[data-theme="light"] .mmd-box .nodeLabel,
+html[data-theme="light"] .mmd-box .edgeLabel,
+html[data-theme="light"] .mmd-box .cluster-label,
+html[data-theme="light"] .mmd-box text{
+  color: #1c2430 !important;
+  fill: #1c2430 !important;
+}
+
+/* 5. 评测树：根卡片统计不断行，连线更清楚。不用 flex:1 撑开树枝，以免把叶子顶进右侧目录。 */
+.mroot em{ white-space: nowrap !important; }
+html:not([data-theme="light"]) .mind{ --spine: rgba(255,255,255,.42) !important; }
+html[data-theme="light"] .mind{ --spine: rgba(28,36,48,.42) !important; }
+@media (min-width: 1280px){
+  .mind .mroot{
+    min-width: 300px !important;
+    padding: 16px 20px !important;
+  }
+  .mind .mroot > span{ max-width: none !important; }
+}
+
+/* 6. 代码页双列：左边代码框跟内容走，不再被右边说明撑高；块间距 18px */
+.blk{
+  align-items: start;
+  padding: 18px 0;
+}
+@media (max-width: 760px){
+  .blk{ padding: 16px 0; gap: 16px; }
+}
+
+/* 霓虹描边收成低透明度细线（可回退：删本段即可） */
+.fx-glow::before{
+  padding: 1px !important;
+}
+.fx-glow.is-lit::before,
+.fx-glow:hover::before{
+  opacity: .22 !important;
+  filter: saturate(.45) !important;
+}
+.fx-glow::after{
+  padding: 1px !important;
+  background: radial-gradient(240px circle at var(--lx,50%) var(--ly,50%),
+    rgba(255,255,255,.20),
+    rgba(61,220,151,.10) 28%,
+    transparent 58%) !important;
+}
+html[data-theme="light"] .fx-glow::after{
+  background: radial-gradient(240px circle at var(--lx,50%) var(--ly,50%),
+    rgba(255,255,255,.45),
+    rgba(23,138,92,.12) 28%,
+    transparent 58%) !important;
+}

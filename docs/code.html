@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CampusRAG · 小白版</title>
 <link rel="stylesheet" href="assets/site.css?v=20261114f">
-<link rel="stylesheet" href="assets/fx.css?v=21">
-<link rel="stylesheet" href="assets/vendor/lenis/lenis.css?v=21">
-<link rel="stylesheet" href="assets/vendor/tocbot/tocbot.css?v=21">
-<link rel="stylesheet" href="assets/vendor/prism/themes/prism-tomorrow.min.css?v=21" id="prism-theme-dark">
-<link rel="stylesheet" href="assets/vendor/prism/themes/prism.min.css?v=21" id="prism-theme-light" disabled>
+<link rel="stylesheet" href="assets/fx.css?v=22">
+<link rel="stylesheet" href="assets/vendor/lenis/lenis.css?v=22">
+<link rel="stylesheet" href="assets/vendor/tocbot/tocbot.css?v=22">
+<link rel="stylesheet" href="assets/vendor/prism/themes/prism-tomorrow.min.css?v=22" id="prism-theme-dark">
+<link rel="stylesheet" href="assets/vendor/prism/themes/prism.min.css?v=22" id="prism-theme-light" disabled>
 <script>(function(){try{var t=document.documentElement.getAttribute("data-theme")==="light"?"light":"dark";var d=document.getElementById("prism-theme-dark");var l=document.getElementById("prism-theme-light");if(d&&l){d.disabled=t==="light";l.disabled=t!=="light";}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}
@@ -34,10 +34,10 @@ h2:first-child{margin-top:0}
 .fn h3{margin:0 0 4px;font-size:17px;font-family:Consolas,monospace}
 .loc{font-family:Consolas,monospace;font-size:12px;color:#6f8091;font-weight:400;margin-left:6px}
 .what{margin:0 0 14px;color:#c3d0dd;font-size:15px;background:#132a21;border-radius:8px;padding:10px 12px}
-.blk{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(0,1fr);gap:16px;border-top:1px dashed #26313d;padding:10px 0}
+.blk{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(0,1fr);gap:16px;align-items:start;border-top:1px dashed #26313d;padding:10px 0}
 .blk:first-of-type{border-top:0}
-.cside{position:relative;background:#12181e;border:1px solid #1e2833;border-radius:8px;padding:8px 10px 8px 62px;overflow:auto;scrollbar-width:thin;scrollbar-color:#2b3947 transparent}
-.cside pre{margin:0;font:12.2px/1.8 Consolas,"Courier New",monospace;color:#d6e2ee;white-space:pre;overflow-x:auto;tab-size:4;scrollbar-width:thin;scrollbar-color:#2b3947 transparent}
+.cside{position:relative;background:#12181e;border:1px solid #1e2833;border-radius:8px;padding:8px 10px 8px 62px;overflow-x:hidden;overflow-y:visible;scrollbar-width:thin;scrollbar-color:#2b3947 transparent}
+.cside pre{margin:0;font:12.2px/1.8 Consolas,"Courier New",monospace;color:#d6e2ee;white-space:pre-wrap;overflow-wrap:anywhere;overflow-x:hidden;tab-size:4;scrollbar-width:thin;scrollbar-color:#2b3947 transparent}
 .ln{position:absolute;left:6px;top:9px;width:52px;text-align:right;font:11px/1.4 Consolas,monospace;color:#6f8091}
 .nside{font-size:14.5px;color:#c3d0dd;padding-top:2px}
 .fnbar{position:sticky;top:0;z-index:5;display:flex;gap:6px;flex-wrap:wrap;background:#0e1217ee;backdrop-filter:blur(4px);padding:10px 0;margin:-6px 0 16px;border-bottom:1px solid #26313d}
@@ -404,9 +404,9 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
   ul.kids > li{animation:none}
 }
 /* 批注疏密度（2026-11-15）：块与块留出间隔，批注行距再松一点，方便对着读 */
-.blk{padding:24px 0}
+.blk{padding:18px 0;align-items:start}
 .nside{line-height:2;letter-spacing:.012em;padding-top:6px;padding-bottom:2px}
-@media(max-width:760px){.blk{padding:22px 0;gap:20px}}
+@media(max-width:760px){.blk{padding:16px 0;gap:16px}}
 </style>  <link rel="prefetch" href="code.html">
 </head><body>
 <div class="site-head">
@@ -563,7 +563,7 @@ STOP_TERMS = set(
     return sum(1 for t in _content_terms(question) if t in ctx)</code></pre></div><div class="nside">ctx 是卡片正文：先整理空白，再去掉所有空格、转小写，方便直接用 t in ctx 判断词在不在原文里。sum(1 for t in ... if t in ctx) 是生成器表达式：每命中一个实词就计 1，最后求和，得到命中个数。ask() 里用这个数跟 TIER_HIGH=2、TIER_MEDIUM=1 比较。</div></div></section><section class="fn"><h3 id="fn3">ask() 的判断部分 <span class="loc">rag_engine.py:400</span></h3><p class="what">拿到分数之后，决定「有依据就答，没依据就认怂」。</p><div class="blk"><div class="cside"><div class="ln">77–80</div><pre class="language-python"><code class="language-python"># 开发集上按事先规则定出：matched 是开发集里对难负例 AUC 最高的信号（0.87）。
 # low = 开发集正例的 10% 分位 = 1，high = 开发负例最大值 = 2。规则与数字见 experiments/dev_thresholds.py
 TIER_HIGH = 2
-TIER_MEDIUM = 1</code></pre></div><div class="nside">两个事先定好的门槛，不是跑测试时现改的。实词命中 ≥ 2 才算高置信，=1 算中档（页面里常叫低置信），=0 就拒答。这两个数字写在源码顶部，ask() 下面立刻会用到。</div></div><div class="blk"><div class="cside"><div class="ln">400</div><pre class="language-python"><code class="language-python">        strong = [(c, s) for c, s in hits if s &gt;= min_score]</code></pre></div><div class="nside">hits 里每一项是 (c, s)：c 是 chunk（卡片），s 是 score（余弦相似度）。这是列表推导式：只留下 s 达到门槛 min_score（默认 0.02）的卡片，得到 strong。</div></div><div class="blk"><div class="cside"><div class="ln">401–409</div><pre class="language-python"><code class="language-python">        if not strong:
+TIER_MEDIUM = 1</code></pre></div><div class="nside">这两个阈值是在开发集上按一条规则定的（见 experiments/dev_thresholds.py）；规则是不是在看结果之前定的，现在没法验证，见评测复盘。实词命中 ≥ 2 才算高置信，=1 算中档（页面里常叫低置信），=0 就拒答。这两个数字写在源码顶部，ask() 下面立刻会用到。</div></div><div class="blk"><div class="cside"><div class="ln">400</div><pre class="language-python"><code class="language-python">        strong = [(c, s) for c, s in hits if s &gt;= min_score]</code></pre></div><div class="nside">hits 里每一项是 (c, s)：c 是 chunk（卡片），s 是 score（余弦相似度）。这是列表推导式：只留下 s 达到门槛 min_score（默认 0.02）的卡片，得到 strong。</div></div><div class="blk"><div class="cside"><div class="ln">401–409</div><pre class="language-python"><code class="language-python">        if not strong:
             return AnswerResult(
                 question=q,
                 answer="根据当前文档，没有找到足够相关的依据，建议换个问法或检查上传的材料是否包含相关条款。",
@@ -578,7 +578,7 @@ TIER_MEDIUM = 1</code></pre></div><div class="nside">两个事先定好的门槛
         top_chunk = hits[0][0]
         matched = _matched_terms(q, top_chunk.text)
         tier = "high" if matched &gt;= TIER_HIGH else ("medium" if matched &gt;= TIER_MEDIUM else "low")
-        logger.info("判定档位 tier=%s matched=%d q=%r", tier, matched, q[:30])</code></pre></div><div class="nside">hits[0] 是检索第一名，也是 (卡片, 分数) 一对；hits[0][0] 取出那张卡片，叫 top_chunk。matched 是问句实词在这张卡片里命中了几个，由 _matched_terms 计算。下面那行是套在一起的三元表达式：matched ≥ TIER_HIGH（=2）判 high，否则再看是否 ≥ TIER_MEDIUM（=1）判 medium，再不够就判 low。这两个阈值写在文件顶部，是按开发集规则事先定的（见 experiments/dev_thresholds.py）。</div></div><div class="blk"><div class="cside"><div class="ln">420–428</div><pre class="language-python"><code class="language-python">        if tier == "low":
+        logger.info("判定档位 tier=%s matched=%d q=%r", tier, matched, q[:30])</code></pre></div><div class="nside">hits[0] 是检索第一名，也是 (卡片, 分数) 一对；hits[0][0] 取出那张卡片，叫 top_chunk。matched 是问句实词在这张卡片里命中了几个，由 _matched_terms 计算。下面那行是套在一起的三元表达式：matched ≥ TIER_HIGH（=2）判 high，否则再看是否 ≥ TIER_MEDIUM（=1）判 medium，再不够就判 low。这两个阈值是在开发集上按一条规则定的（见 experiments/dev_thresholds.py）；规则是不是在看结果之前定的，现在没法验证，见评测复盘。</div></div><div class="blk"><div class="cside"><div class="ln">420–428</div><pre class="language-python"><code class="language-python">        if tier == "low":
             return AnswerResult(
                 question=q,
                 answer="根据当前文档，没有找到足够相关的依据，建议换个问法或检查上传的材料是否包含相关条款。",
@@ -762,12 +762,12 @@ document.querySelectorAll('[data-go]').forEach(a=>a.onclick=(e)=>{
 })();
 </script>
 
-<script src="assets/vendor/lenis/lenis.min.js?v=21"></script>
-<script src="assets/vendor/tocbot/tocbot.min.js?v=21"></script>
-<script src="assets/vendor/prism/prism.min.js?v=21"></script>
-<script src="assets/vendor/prism/components/prism-python.min.js?v=21"></script>
-<script src="assets/fx.js?v=21"></script>
-<script src="assets/liquid-glass.js?v=21"></script>
+<script src="assets/vendor/lenis/lenis.min.js?v=22"></script>
+<script src="assets/vendor/tocbot/tocbot.min.js?v=22"></script>
+<script src="assets/vendor/prism/prism.min.js?v=22"></script>
+<script src="assets/vendor/prism/components/prism-python.min.js?v=22"></script>
+<script src="assets/fx.js?v=22"></script>
+<script src="assets/liquid-glass.js?v=22"></script>
 </body></html>
 
 

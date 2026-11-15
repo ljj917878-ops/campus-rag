@@ -6,8 +6,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CampusRAG · 一张图看全</title>
 <link rel="stylesheet" href="assets/site.css?v=20261114f">
-<link rel="stylesheet" href="assets/fx.css?v=21">
-<link rel="stylesheet" href="assets/vendor/lenis/lenis.css?v=21">
+<link rel="stylesheet" href="assets/fx.css?v=22">
+<link rel="stylesheet" href="assets/vendor/lenis/lenis.css?v=22">
 <style>
   /* ── 顶部数字条 ───────────────────────── */
   .flowbar{display:flex;align-items:stretch;gap:0;background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);margin:18px 0 6px}
@@ -169,7 +169,7 @@ li.collapsed > ul.kids{display:none}
   .mind .dp{width:440px}
   .mind .dp .dpbody{width:440px;max-width:440px}
   .mind .nd.lv1{margin:3px 0;min-width:172px}
-  .mind .mroot > span{max-width:210px}
+  .mind .mroot > span{max-width:none}
   .mind .dp .dpbody{max-width:560px}
 }
 
@@ -608,12 +608,15 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
   end
   subgraph ask [每次提问]
     D[04 检索] --> E[05 判定]
-    E -->|低于 0.02| F[依据不足，不调模型]
-    E -->|过线| G[06 组装]
+    E -->|低于 0.02| F[拒答]
+    E -->|过线后数命中词| T[看 top1 实词命中数]
+    T -->|0 个| F
+    T -->|1 个| M["低置信：给最接近原文<br/>并提示"]
+    T -->|≥2 个| G["06 组装：抽句<br/>可选生成，失败回退"]
     G --> H[07 作答]
   end
   C -.-> D</pre>
-            <div class="mmd-mount" role="img" aria-label="七步流程图：启动时读入、切分、索引，每次提问检索、判定、组装、作答"></div>
+            <div class="mmd-mount" role="img" aria-label="七步流程图：启动时读入、切分、索引；每次提问先检索再判定：相似度低于 0.02 或命中 0 词则拒答，命中 1 词低置信并提示，命中至少 2 词则抽句作答，生成式可选、失败回退抽句"></div>
           </div>
       </li>
 
@@ -727,7 +730,7 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
           <div class="mmd-box mmd-wide" data-mmd="files">
             <pre class="mermaid-src" hidden>flowchart LR
   app[app.py 界面] --> eng[rag_engine.py 核心]
-  eng -.->|可选 Key| gen[generator.py 改写]
+  eng -.->|可选 Key| gen["generator.py<br/>改写"]
   ev[evaluation.py 评测] --> eng</pre>
             <div class="mmd-mount" role="img" aria-label="四个文件调用关系：app.py 调用 rag_engine.py，可选调用 generator.py，evaluation.py 调用引擎"></div>
           </div>
@@ -927,10 +930,10 @@ ul.kids > li{animation:kidIn .26s cubic-bezier(.22,.8,.24,1) both}
 })();
 </script>
 
-<script src="assets/vendor/lenis/lenis.min.js?v=21"></script>
-<script src="assets/fx.js?v=21"></script>
-<script src="assets/liquid-glass.js?v=21"></script>
-<script src="assets/mermaid-lazy.js?v=21"></script>
+<script src="assets/vendor/lenis/lenis.min.js?v=22"></script>
+<script src="assets/fx.js?v=22"></script>
+<script src="assets/liquid-glass.js?v=22"></script>
+<script src="assets/mermaid-lazy.js?v=22"></script>
 </body>
 </html>
 
